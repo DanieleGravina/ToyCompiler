@@ -25,6 +25,13 @@ public:
     lexer(char *p){
         _p = p;
         
+        reserved_words = reserved_words();
+        punctuation = punctuation();
+        
+    }
+    
+    ~lexer(){
+        
     }
     
     int next();
@@ -40,6 +47,8 @@ private:
     map<string, token::TokenType> punctuation;
     
     map<string, token::TokenType>::iterator it;
+    
+    lexer&  operator=(lexer& rhs);  
     
     
 };
@@ -81,10 +90,19 @@ int lexer::next(){
         return token::TokenType::number;
     }
     
-    it = punctuation.find(*_p);
+    if (ispunct(*_p)) { // punctuation
+        identifier_str = *_p;
+        _p++;
+        while (ispunct(*_p)){
+                identifier_str += *_p;
+                _p++;
+        }
         
-    if(it != punctuation.end()){
-       return  it->second;
+        it = punctuation.find(identifier_str);
+        
+        if(it != punctuation.end()){
+           return  it->second;
+        }
     }
     
     
@@ -117,6 +135,29 @@ static const map<string, token::TokenType> reserved_words(){
     return result;
 }
 
+static const map<string, token::TokenType> punctuation(){
+    map<string, token::TokenType> result;
+    
+    result["("] = token::TokenType::lparen; 
+    result[")"] = token::TokenType::rparen; 
+    result["*"] = token::TokenType::times;
+    result["/"] = token::TokenType::slash;
+    result["+"] = token::TokenType::plus;
+    result["-"] = token::TokenType::minus;
+    result["="] = token::TokenType::eql;
+    result["!="] = token::TokenType::neq;
+    result["<"] = token::TokenType::lss;
+    result["<="] = token::TokenType::leq;
+    result[">"] = token::TokenType::gtr;
+    result[">="] = token::TokenType::geq;
+    result[";"] = token::TokenType::semicolon;
+    result[":="] = token::TokenType::becomes;
+    result["."] = token::TokenType::period;
+    result["!"] = token::TokenType::print;
+    
+    return result;
+}
+   	             
 
 
 #endif	/* LEXER_H */
