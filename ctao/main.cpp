@@ -6,24 +6,39 @@
  */
 
 #include <string>
-#include <token.h>
 #include <cstdio>
-#include <lexer.h>
+#include "lexer.h"
+#include "frontend.h"
 
-int main(){
+int main(int argc, char **argv){
     
-    string s = "VAR x, squ;  PROCEDURE square; BEGIN squ := x * x END; BEGIN x := 1; WHILE x <= 10 DO BEGIN CALL square;x := x + 1 ; !squ    END END."
+    using namespace std;
     
-    char* s_punt = s;
+    const char* s_punt = "VAR x, squ; "
+    " PROCEDURE square; "          
+    " BEGIN "
+    " squ := x * x "
+    "        END; "
+
+    " BEGIN "
+    " x := 1; "
+    " WHILE x <= 10 DO "
+    " BEGIN "
+    " CALL square; "
+    " !squ; "
+    " x := x + 1 "
+    " END "
+    " END. ";
+    
+    
+    
+    //s_punt = &argv[1][0];
     
     lexer l(s_punt);
     
-    while(l.next() != token::TokenType::eof){
-        std::cout << (token::TokenType)l.next() << std::endl; 
-    }
+    frontend f(l);
     
-    
-            
+    f.program();         
     
 }
 

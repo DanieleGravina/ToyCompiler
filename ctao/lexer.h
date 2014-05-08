@@ -9,26 +9,61 @@
 #define	LEXER_H
 
 #include<map>
-#include<token.h>
 #include<string>
-#include<cctype>
-#include<algorithm>
+#include<cstdio>
 
 using namespace std;
 
+class token{
+    
+public:
+    
+    enum TokenType{
+        error,
+        eof,
+        number,
+        identifier,
+        lparen,
+        rparen,
+        times,
+        slash,
+        plus,
+        minus,
+        eql,
+        neq,
+        lss,
+        leq,
+        gtr,
+        geq,
+        callsym,
+        beginsym,
+        semicolon,
+        endsym,
+        ifsym,
+        whilesym,
+        becomes,
+        thensym,
+        dosym,
+        constsym,
+        comma,
+        varsym,
+        procsym,
+        period,
+        oddsym,
+        print
+    };
+    
+private:
+    //just a wrapper class
+    token();
+};
 
 
 class lexer{
     
 public:
     
-    lexer(char *p){
-        _p = p;
-        
-        reserved_words = reserved_words();
-        punctuation = punctuation();
-        
-    }
+    lexer(const char *p);
     
     ~lexer(){
         
@@ -40,16 +75,16 @@ public:
         return identifier_str;
     }
     
-    double Value(){
+    int Value(){
         return num_val;
     }
     
 private:
     
-    char *_p;
+    const char *_p;
     
     string identifier_str;  
-    double num_val;    
+    int num_val;    
     
     map<string, token::TokenType> reserved_words;
     map<string, token::TokenType> punctuation;
@@ -60,51 +95,7 @@ private:
     
     
 };
-
-
-
-static const map<string, token::TokenType> reserved_words(){
-    map<string, token::TokenType> result;
-    
-    result["call"] = token::TokenType::callsym;
-    result["begin"] = token::TokenType::beginsym;
-    result["end"] = token::TokenType::endsym;
-    result["if"] = token::TokenType::ifsym;
-    result["while"] = token::TokenType::whilesym;
-    result["then"] = token::TokenType::thensym;
-    result["do"] = token::TokenType::dosym;
-    result["const"] = token::TokenType::constsym;
-    result["var"] = token::TokenType::varsym;
-    result["procedure"] = token::TokenType::procsym;
-    result["oddsym"] = token::TokenType::oddsym;
-    result["print"] = token::TokenType::print;
-    
-    return result;
-}
-
-static const map<string, token::TokenType> punctuation(){
-    map<string, token::TokenType> result;
-    
-    result["("] = token::TokenType::lparen; 
-    result[")"] = token::TokenType::rparen; 
-    result["*"] = token::TokenType::times;
-    result["/"] = token::TokenType::slash;
-    result["+"] = token::TokenType::plus;
-    result["-"] = token::TokenType::minus;
-    result["="] = token::TokenType::eql;
-    result["!="] = token::TokenType::neq;
-    result["<"] = token::TokenType::lss;
-    result["<="] = token::TokenType::leq;
-    result[">"] = token::TokenType::gtr;
-    result[">="] = token::TokenType::geq;
-    result[";"] = token::TokenType::semicolon;
-    result[":="] = token::TokenType::becomes;
-    result["."] = token::TokenType::period;
-    result["!"] = token::TokenType::print;
-    
-    return result;
-}
-   	             
+        
 
 
 #endif	/* LEXER_H */

@@ -12,14 +12,14 @@
 #include<list>
 #include<string>
 #include<stack>
-#include<cstdio>
-
-#include "token.h"
+#include<iostream>
 #include "lexer.h"
 
 using namespace std;
 
 class frontend{
+    
+public:
     
     frontend(lexer lex):lex(lex){
         getNextToken();
@@ -29,7 +29,7 @@ class frontend{
     
     void program(){
         block();
-        expect(token::TokenType::period);
+        expect(token::period);
     }
     
     
@@ -47,55 +47,202 @@ private:
         return CurTok = lex.next();
     }
     
-    void error(string s){
-        std::cout << s << endl;
+    void error(const char s[]){
+        cout << s << endl;
     }
     
-    void expect(int tok){
-        std::cout << "expecting " << tok << std::endl;
+    bool expect(int tok){
+        
+        cout << "expecting " << tok << endl;
+        
         if (!accept(tok)){
             error("unexpected symbol");
+            return false;
         }
+        
+        return true;
     }
     
     bool accept(int tok){
         
-        bool result = tok == CurTok;
-        
         cout << "accepting " << tok << " == " << CurTok << endl;
         
-        getNextToken();
+        if(tok == CurTok){
+            getNextToken();
+            return true;
+        }
         
-        return result;
+        return false;
             
     }
     
     void block(){
-        if(accept(token::TokenType::constsym)){
+        if(accept(token::constsym)){
             
-            expect(token::TokenType::identifier);
+            expect(token::identifier);
             
             name = lex.Identifier(); 
-            expect(token::TokenType::eql);
-            expect(token::TokenType::number);
+            expect(token::eql);
+            expect(token::number);
 	    //local_vars.append(Symbol(name, standard_types['int']), value);
             
-	    while ( accept(token::TokenType::comma) ) {
-			expect(token::TokenType::identifier);
+	    while ( accept(token::comma) ) {
+			expect(token::identifier);
 			name = lex.Identifier(); 
-                        expect(token::TokenType::eql);
-                        expect(token::TokenType::number);
+                        expect(token::eql);
+                        expect(token::number);
 			//local_vars.append(Symbol(name, standard_types['int']), value)
             }
             
-	    expect(token::TokenType::semicolon);
+	    expect(token::semicolon);
             
         }
-        if(accept(token::TokenType::varsym)){
+        if(accept(token::varsym)){
             
+            expect(token::identifier);
+            
+            //local_vars.append(Symbol(value, standard_types['int']))
+            while (accept(token::comma)){
+                    expect(token::identifier);
+                    //local_vars.append(Symbol(value, standard_types['int']))
+            }
+            expect(token::semicolon); 
+           
         }
-        while(accept(token::TokenType::procsym)){
+        
+        while(accept(token::procsym)){
             
+            expect(token::identifier);
+            string fname = lex.Identifier();
+            expect(token::semicolon);
+            //local_vars.append(Symbol(fname, standard_types['function']))
+            block();
+            expect(token::semicolon);
+            //defs.append(FunctionDef(symbol=local_vars.find(fname), body=fbody))
+        }
+        
+        statement();
+	//return Block(gl_sym=symtab, lc_sym=local_vars, defs=defs, body=stat)
+    }
+    
+    void statement(){
+        
+        switch(CurTok){
+            case token::identifier : 
+                cout << "accepting " << token::identifier << " == " << CurTok << endl;
+                getNextToken();
+                //target=symtab.find(value)
+		expect(token::becomes);
+		expression();
+		//return AssignStat(target=target, expr=expr, symtab=symtab)
+                break;
+            case token::callsym :
+                cout << "accepting " << token::callsym << " == " << CurTok << endl;
+                getNextToken();
+                expect(token::identifier);
+                //return CallStat(call_expr=CallExpr(function=symtab.find(value), symtab=symtab), symtab=symtab)
+                break;
+                
+            case token::beginsym :
+                cout << "accepting " << token::beginsym << " == " << CurTok << endl;
+                getNextToken();
+                //statement_list = StatList(symtab=symtab)
+		//statement_list.append(statement(symtab))
+                do{
+                 statement();   
+                }while (accept(token::semicolon));
+			//statement_list.append(statement(symtab))
+		expect(token::endsym);
+		//statement_list.print_content()
+		//return statement_list
+                break;
+                
+            case token::ifsym :
+                cout << "accepting " << token::ifsym << " == " << CurTok << endl;
+                getNextToken();
+                //cond=condition()
+                condition();
+		expect(token::thensym);
+                statement();
+		//then=statement(symtab)
+		//return IfStat(cond=cond,thenpart=then, symtab=symtab)
+                break;
+                
+            case token::whilesym :
+                cout << "accepting " << token::whilesym << " == " << CurTok << endl;
+                getNextToken();
+                //cond=condition(symtab)
+                condition();
+		expect(token::dosym);
+                statement();
+		//return WhileStat(cond=cond, body=body, symtab=symtab)
+                break;
+                
+            case token::print :
+                cout << "accepting " << token::print << " == " << CurTok << endl;
+                getNextToken();
+                expect(token::identifier);
+		//return PrintStat(symbol=symtab.find(value),symtab=symtab)
+                break;
+                
+            default :
+                error("statement : syntax error");
+                getNextToken();
+                break;
+                
+        }
+        
+    }
+    
+    void expression(){
+        if (CurTok == token::plus || CurTok == token::minus)
+            getNextToken();
+        term();
+        while (CurTok == token::plus || CurTok == token::minus) {
+            getNextToken();
+            term();
+        }
+    }
+    
+    void condition(){
+        
+        if (accept(token::oddsym)) {
+            expression();
+        } else {
+            expression();
+            if (CurTok == token::eql || CurTok == token::neq || 
+                    CurTok == token::lss || CurTok == token::leq || 
+                    CurTok == token::gtr || CurTok == token::geq) {
+                getNextToken();
+                expression();
+            } else {
+                error("condition: invalid operator");
+                getNextToken();
+            }
+        }
+
+        
+    }
+    
+    void term() {
+        factor();
+        while (CurTok == token::times || CurTok == token::slash) {
+            getNextToken();
+            factor();
+        }
+    }
+    
+    void factor(){
+        if (accept(token::identifier)) {
+        ;
+        } else if (accept(token::number)) {
+            ;
+        } else if (accept(token::lparen)) {
+            expression();
+            expect(token::rparen);
+        } else {
+            error("factor: syntax error");
+            getNextToken();
         }
     }
     
