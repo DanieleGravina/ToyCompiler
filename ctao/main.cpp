@@ -15,7 +15,7 @@ int main(int argc, char **argv){
     using namespace std;
     
     const char* s_punt = "VAR x, squ; "
-    " PROCEDURE square; "          
+    " PROCEDURE square x ; "          
     " BEGIN "
     " squ := x * x "
     "        END; "
@@ -24,7 +24,7 @@ int main(int argc, char **argv){
     " x := 1; "
     " WHILE x <= 10 DO "
     " BEGIN "
-    " CALL square; "
+    " CALL square x ; "
     " !squ; "
     " x := x + 1 "
     " END "
