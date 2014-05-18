@@ -51,7 +51,7 @@ public:
         period,
         oddsym,
         print
-    };
+    };  
     
 private:
     //just a wrapper class
@@ -71,11 +71,11 @@ public:
     
     int next();
     
-    string Identifier(){
+    string Identifier() {
         return identifier_str;
     }
     
-    int Value(){
+    int Value() const{
         return num_val;
     }
     

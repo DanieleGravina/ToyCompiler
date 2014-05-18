@@ -25,12 +25,17 @@ public:
     
     frontend(lexer lex):lex(lex){
         getNextToken();
+        
+        standard_types[BaseType::INT] = Type("INTEGER", 32, BaseType::INT);
+        standard_types[BaseType::LABEL] = LabelType();
+        standard_types[BaseType::FUNCTION] = FunctionType();
     }
     
     
     
     void program(){
         Block root = block(global_symtab);
+        root.repr();
         expect(token::period);
     }
     
@@ -40,8 +45,6 @@ private:
     lexer lex;
     
     int CurTok;
-    
-    string name;
     
     int value;
     
@@ -86,6 +89,8 @@ private:
         
         DefinitionList defs;
         
+        string name;
+        
         if(accept(token::constsym)){
             
             expect(token::identifier);
@@ -125,7 +130,7 @@ private:
             
             string fname = lex.Identifier();
             vector<string> fvars;
-            vector<Symbol&> parameters;
+            vector<Symbol> parameters;
             
             
             if(accept(token::identifier)){
@@ -141,11 +146,11 @@ private:
             expect(token::semicolon);
             local_vars.append(Symbol(fname, standard_types[BaseType::FUNCTION]));
             
-            for(vector<const string>::size_type i = 0; i < fvars.size(); ++i){
+            for(vector<string>::size_type i = 0; i < fvars.size(); ++i){
                 local_vars.append(Symbol(fvars[i], standard_types[BaseType::INT]));
-                parameters[i] = local_vars.find(fvars[i]);
+                parameters.push_back(local_vars.find(fvars[i]));
             }
-            
+           
             Block fbody = block(local_vars); //bisgna passargli i parametri come var locali
             expect(token::semicolon);
             defs.append(FunctionDef(local_vars.find(fname), parameters, fbody));
@@ -191,12 +196,11 @@ private:
                 cout << "accepting " << token::beginsym << " == " << CurTok << endl;
                 getNextToken();
                 StatList statement_list(symtab);
-		statement_list.append(statement(symtab));
                 do{
                  statement_list.append(statement(symtab));   
                 }while (accept(token::semicolon));
 		expect(token::endsym);
-		//statement_list.print_content()
+		statement_list.printContent();
 		return statement_list;
                 break;
             }    
@@ -213,7 +217,7 @@ private:
                 
             case token::whilesym :
             {
-                cout << "accepting " << token::whilesym << " == " << CurTok << endl;
+                cout << "accepting" << " while " << token::whilesym << " == " << CurTok << endl;
                 getNextToken();
                 IRNode cond = condition(symtab);
 		expect(token::dosym);

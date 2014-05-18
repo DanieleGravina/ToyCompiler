@@ -12,9 +12,14 @@
 #include<vector>
 #include<list>
 #include<string>
+#include<sstream>
+#include<iostream>
 
 #include "lexer.h"
 
+using namespace std;
+
+static int id = 0;
 
 class BaseType{
     
@@ -36,18 +41,21 @@ private:
 class Type{
 
 public :    
-    Type(string& _name, size_t _size, BaseType _basetype)
+    
+    Type():name("Null"), size(0), basetype(0){}
+    
+    Type(string const& _name, size_t _size, int _basetype)
             :name(_name), size(_size), basetype(_basetype){}
     
 private:
-    const string& name;
+    string name;
     size_t size;
-    BaseType basetype;
+    int basetype;
     
 };
 
 
-std::map <int, Type&> standard_types;
+std::map <int, Type> standard_types;
 
 
 class Value{
@@ -64,10 +72,11 @@ private:
 };
 
 class Symbol{
-    
 public:
     
-    Symbol(string _name, Type& _stype, Value _value = NULL)
+    Symbol():  value(0){}
+    
+    Symbol(string const& _name, Type _stype, Value _value = NULL)
         : name(_name), stype(_stype), value(_value) {
     }
         
@@ -76,8 +85,8 @@ public:
     }
             
 private:
-    const string name;
-    Type& stype;
+    string name;
+    Type stype;
     Value value;
 };
 
@@ -86,7 +95,7 @@ class SymbolTable{
     
 public:
     
-    Symbol& find(const string& symbol_name){
+    Symbol find(std::string symbol_name){
         return table[symbol_name];
     }
     
@@ -98,20 +107,48 @@ public:
     
     
 private :
-    std::map<const string&, Symbol> table;
+    std::map<std::string, Symbol> table;
+};
+
+class LabelType : public Type{
+public :
+    LabelType() : Type("Label", 0, BaseType::LABEL), ids(0){};
+    
+    Symbol Label(Value target = 0){
+
+        string name;          // string which will contain the result
+
+        ostringstream convert;   // stream used for the conversion
+
+        convert << "label" << ++ids;       
+
+        name = convert.str();
+        
+        return Symbol(name, *this, target);
+    }
+    
+private:
+    int ids;
+};
+
+class FunctionType : public Type{
+public :
+    FunctionType() : Type("Function", 0, BaseType::FUNCTION){};
 };
 
 
 class IRNode {
 public:
     
-    IRNode(IRNode* _parent = NULL, vector<IRNode&>* _children = NULL, SymbolTable* _symtab = NULL):
+    IRNode(IRNode* _parent = NULL, vector<IRNode>* _children = NULL, SymbolTable* _symtab = NULL):
         parent(_parent), children(_children), symtab(_symtab)
-    {
-            
+    {       
+        myId = ++id;       
     }
         
-    virtual ~IRNode();
+    virtual ~IRNode(){
+        
+    }
     
     IRNode& getParent() const{
         return *parent; 
@@ -121,7 +158,11 @@ public:
         parent = &par;
     }
     
-    vector<IRNode&>& getChildren() const{
+    bool hasChildren(){
+        return (children != NULL);
+    }
+    
+    vector<IRNode>& getChildren() const{
         return *children;
     }
     
@@ -134,27 +175,39 @@ public:
         
     }
     
-    /*inline bool operator==(IRNode& rhs){
-        return this == &rhs;
-    }*/
+    void repr(){
+        
+        if(hasChildren()){
+            
+            cout << "Node id: " << Id() << endl;
+            for(vector<IRNode>::iterator it = children->begin(); it != children->end(); ++it){
+                cout << " ";
+                it->repr();
+            }
+        }
+    }
     
-    void replace(IRNode& old_node, IRNode& new_node){
+    /*void replace(IRNode& old_node, IRNode& new_node){
         if(children){
-            for(vector<IRNode&>::size_type i = 0; i < children->size(); ++i){
+            for(vector<IRNode>::size_type i = 0; i < children->size(); ++i){
                 if(children->at(i) == old_node){
                     children->at(i) = new_node;
                 }
             }
         }
         
+    }*/
+    
+    int Id() const{
+        return myId;
     }
     
 friend bool operator==(IRNode& lhs, IRNode& rhs);    
     
 private:
-    
+    int myId;
     IRNode* parent;
-    vector<IRNode&>* children;
+    vector<IRNode>* children;
     SymbolTable* symtab;
     
 };
@@ -223,7 +276,7 @@ public:
 
 class CallExpr : public Expr{
 public:    
-    CallExpr(Symbol& sym, int op, SymbolTable& symtab):
+    CallExpr(Symbol sym, int op, SymbolTable& symtab):
         Expr(op, symtab), function(sym)
     {
         
@@ -262,14 +315,36 @@ class StatList : public IRNode {
 public:
     StatList(SymbolTable& symtab )
     :IRNode(NULL, NULL, &symtab){
+        
+        cout << "StatList new " << Id() << endl;
     }
     
     void append(IRNode stat){
+        
+        stat.setParent(*this);
+        
+        cout << "Append stat " << stat.Id() << " to " << Id() << endl;
         stat_list.push_back(stat);
+        setChildren(stat_list);
+    }
+    
+    void printContent(){
+        if(hasChildren()){
+            
+            cout << "StatList " << Id() << ":" << endl;
+            
+            cout << "[";
+            
+            for(vector<IRNode>::size_type i = 0; i < getChildren().size(); ++i){
+                cout << getChildren()[i].Id() << " ";
+            }
+            
+            cout << "]" << endl;
+        }
     }
     
 private:
-    std::list<IRNode> stat_list;
+    std::vector<IRNode> stat_list;
 };
 
 class AssignStat : public Stat{
@@ -280,7 +355,7 @@ public:
     }
 private:
     Symbol& sym;
-    Expr& expr;
+    IRNode& expr;
 };
 
 class CallStat : public Stat{
@@ -305,7 +380,7 @@ public:
         cond.setParent(*this);
         then.setParent(*this);
         
-        vector<IRNode&> children;
+        vector<IRNode> children;
         children.push_back(cond);
         children.push_back(then);
         
@@ -322,7 +397,7 @@ public:
         cond.setParent(*this);
         body.setParent(*this);
         
-        vector<IRNode&> children;
+        vector<IRNode> children;
         children.push_back(cond);
         children.push_back(body);
         
@@ -332,7 +407,7 @@ public:
 
 class PrintStat : public Stat{
 public:
-    PrintStat(Symbol& _sym, SymbolTable &symtab)
+    PrintStat(Symbol _sym, SymbolTable &symtab)
         :sym(_sym), Stat(symtab)
     {
         
@@ -374,6 +449,13 @@ public :
     Stat(_gl_sym), gl_sym(_gl_sym), lc_sym(_lc_sym), body(_body), defs(_defs)
     {
          body.setParent(*this);
+         defs.setParent(*this);
+         
+         vector<IRNode> children;
+         children.push_back(body);
+         children.push_back(defs);
+         
+         setChildren(children);
     }
   
     
@@ -388,7 +470,7 @@ private:
 
 class FunctionDef : public Definition{
 public :
-    FunctionDef(Symbol& _symbol, vector<Symbol&>& _parameters, IRNode& _body)
+    FunctionDef(Symbol _symbol, vector<Symbol>& _parameters, IRNode& _body)
         :Definition(_symbol), parameters(_parameters), body(_body){
             
             body.setParent(*this);
@@ -400,19 +482,19 @@ public :
     }
         
     
-    const vector<Symbol&>& getParameters() const{
+    const vector<Symbol>& getParameters() const{
         return parameters;
     }
 
 private:
-    const vector<Symbol&>& parameters;
+    const vector<Symbol>& parameters;
     IRNode& body;
     
 };
 
 class Var : public IRNode{
 public:    
-    Var(Symbol& _symbol, SymbolTable& symtab) : symbol(_symbol), IRNode(NULL, NULL, &symtab){
+    Var(Symbol _symbol, SymbolTable& symtab) : symbol(_symbol), IRNode(NULL, NULL, &symtab){
         
     }
     

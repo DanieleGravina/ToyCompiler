@@ -18,7 +18,7 @@ int main(int argc, char **argv){
     " PROCEDURE square x ; "          
     " BEGIN "
     " squ := x * x "
-    "        END; "
+    " END; "
 
     " BEGIN "
     " x := 1; "
