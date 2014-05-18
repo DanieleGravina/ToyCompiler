@@ -245,7 +245,7 @@ private:
 class BinExpr : public Expr{
 public:
     
-    BinExpr(int _op, vector<IRNode>& children, SymbolTable& symtab):
+    BinExpr(int _op, vector<IRNode> children, SymbolTable& symtab):
         Expr(_op, symtab){
         
         for(vector<IRNode>::size_type i = 0; i < children.size(); ++i)
@@ -349,13 +349,18 @@ private:
 
 class AssignStat : public Stat{
 public:
-    AssignStat(Symbol& _sym, IRNode& _expr, SymbolTable& symtab)
+    AssignStat(Symbol& _sym, IRNode _expr, SymbolTable& symtab)
     : Stat(symtab), sym(_sym), expr(_expr) {
-        
+       expr.setParent(*this);
+       
+       vector<IRNode> children;
+       children.push_back(expr);
+       
+       setChildren(children);
     }
 private:
     Symbol& sym;
-    IRNode& expr;
+    IRNode expr;
 };
 
 class CallStat : public Stat{
@@ -365,6 +370,11 @@ public:
             :Stat(symtab), call(expr){
         
         call.setParent(*this);
+        
+       vector<IRNode> children;
+       children.push_back(call);
+       
+       setChildren(children);
     }
     
 private:
@@ -373,7 +383,7 @@ private:
 
 class IfStat : public Stat{
 public:
-    IfStat(IRNode& cond, IRNode& then, SymbolTable &symtab)
+    IfStat(IRNode cond, IRNode then, SymbolTable &symtab)
         :Stat(symtab)
     {
         
@@ -390,7 +400,7 @@ public:
 
 class WhileStat : public Stat{
 public:
-    WhileStat(IRNode& cond, IRNode& body, SymbolTable &symtab)
+    WhileStat(IRNode cond, IRNode body, SymbolTable &symtab)
          :Stat(symtab)   
     {
         
@@ -445,7 +455,7 @@ class Block : public Stat{
 public :
     
     Block(SymbolTable& _gl_sym, SymbolTable& _lc_sym,
-            IRNode& _body, DefinitionList& _defs):
+            IRNode _body, DefinitionList _defs):
     Stat(_gl_sym), gl_sym(_gl_sym), lc_sym(_lc_sym), body(_body), defs(_defs)
     {
          body.setParent(*this);
@@ -470,10 +480,15 @@ private:
 
 class FunctionDef : public Definition{
 public :
-    FunctionDef(Symbol _symbol, vector<Symbol>& _parameters, IRNode& _body)
+    FunctionDef(Symbol _symbol, vector<Symbol>& _parameters, IRNode _body)
         :Definition(_symbol), parameters(_parameters), body(_body){
             
             body.setParent(*this);
+            
+            vector<IRNode> children;
+            children.push_back(_body);
+       
+            setChildren(children);
            
             /*for(vector<Symbol&>::size_type i = 0; i < parameters.size(); ++i){
                 parameters[i].setParent(this);
@@ -507,7 +522,7 @@ public:
     Const(Value _value, SymbolTable& symtab):value(_value), IRNode(NULL, NULL, &symtab){};
 
 private:
-    Value& value;
+    Value value;
 };
 
 
