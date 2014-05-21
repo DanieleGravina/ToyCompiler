@@ -50,7 +50,10 @@ public:
         procsym,
         period,
         oddsym,
-        print
+        print,
+        arraysym,
+        lsquare,
+        rsquare
     };  
     
 private:

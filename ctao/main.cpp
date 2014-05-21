@@ -14,7 +14,8 @@ int main(int argc, char **argv){
     
     using namespace std;
     
-    const char* s_punt = "VAR x, squ; "
+    const char* s_punt = "VAR x , squ; "
+    " ARRAY y[10] ; "
     " PROCEDURE square x ; "          
     " BEGIN "
     " squ := x * x "
@@ -22,17 +23,18 @@ int main(int argc, char **argv){
 
     " BEGIN "
     " x := 1; "
+    " y[x] := 1;"
     " WHILE x <= 10 DO "
-    " BEGIN "
-    " CALL square x ; "
-    " !squ; "
-    " x := x + 1 "
-    " END "
+    "  BEGIN "
+    "  CALL square x ; "
+    "  !squ; "
+    "  x := x + 1 "
+    "  END "
     " END. ";
     
     
     
-    //s_punt = &argv[1][0];
+    //file = &argv[1][0];
     
     lexer l(s_punt);
     

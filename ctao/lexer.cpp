@@ -17,6 +17,7 @@ lexer::lexer(const char* p){
         reserved_words["procedure"] = token::procsym;
         reserved_words["oddsym"] = token::oddsym;
         reserved_words["print"] = token::print;
+        reserved_words["array"] = token::arraysym;
         
         punctuation["("] = token::lparen; 
         punctuation[")"] = token::rparen; 
@@ -35,6 +36,8 @@ lexer::lexer(const char* p){
         punctuation["."] = token::period;
         punctuation["!"] = token::print;
         punctuation[","] = token::comma;
+        punctuation["["] = token::lsquare;
+        punctuation["]"] = token::rsquare;
         
 }
 
