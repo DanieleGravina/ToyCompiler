@@ -220,7 +220,7 @@ public:
      * return node parent, if not exists, return null
      * @return *IRNode
      */
-    IRNode* getParent() const{
+    IRNode* getParent() {
         return parent; 
     }
     
@@ -276,6 +276,10 @@ public:
     virtual void lower(){
     }
     
+    virtual void flatten(){
+        
+    }
+    
     void lowering(){
         
         if(hasChildren()){
@@ -286,6 +290,30 @@ public:
         }
         
         lower();
+    }
+    
+    void flattening(){
+        if(hasChildren()){
+            
+            for(vector<IRNode*>::size_type i = 0; i < children->size(); ++i){
+                (children->at(i))->flattening();
+            }
+        }
+        
+        flatten();
+    }
+    
+    void getStatLists(list<IRNode*>* statlists){
+        
+        if(hasChildren()){
+            
+            for(vector<IRNode*>::size_type i = 0; i < children->size(); ++i){
+                (children->at(i))->getStatLists(statlists);
+            }
+        }
+        
+        if(NodeType() == "StatList" && statlists)
+            statlists->push_back(this);
     }
     
     void replace(IRNode* old_node, IRNode* new_node){
@@ -526,17 +554,69 @@ public:
     /**
      * Makes one statlist from  nested statlists
      */
-    void flatten(){
+    virtual void flatten(){
+        //TODO review the code
         if(getParent()->NodeType() == "StatList"){
             cout << "flattening of StatList " << Id() << "in " << getParent()->Id() << endl;
             
-            for(vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i){
+            
+            if(getLabel()){
+                static_cast<Stat*>(getChildren()->at(0))->setLabel(getLabel()); //??delete
+            }
+            
+            for(vector<IRNode*>::size_type i = 1; i < getChildren()->size(); ++i){
                 getChildren()->at(i)->setParent(getParent());
             }
             
-            if(getLabel()){
-                getChildren()->at(0).setLabel(getLabel()); //??delete
+            vector<IRNode*>::iterator it = getParent()->getChildren()->begin();
+            vector<IRNode*>::iterator it2 = getChildren()->begin();
+            
+            while(*it != this){
+                it++;
             }
+            
+            cout << "replacing 0 child" << endl;
+            
+            vector<IRNode*>* childrenParent = getParent()->getChildren();
+            
+            for(vector<IRNode*>::size_type i = 0; i <  getChildren()->size(); ++i){
+                        cout << getChildren()->at(i)->NodeType() << getChildren()->at(i)->Id();
+            }
+            
+            cout << endl;
+            
+            for(vector<IRNode*>::size_type i = 0; i <  childrenParent->size(); ++i){
+                        cout << childrenParent->at(i)->NodeType() << childrenParent->at(i)->Id();
+            }
+            
+            cout << endl;
+            
+            getParent()->replace(this, getChildren()->at(0));
+            
+            it++;
+            it2++;
+            
+            for(vector<IRNode*>::size_type i = 0; i <  childrenParent->size(); ++i){
+                        cout << childrenParent->at(i)->NodeType() << childrenParent->at(i)->Id();
+            }
+            
+            cout << endl;
+            
+            for(; it != childrenParent->end() && it2 != getChildren()->end(); ++it, ++it2){
+                childrenParent->insert(it, *it2);
+                it != childrenParent->begin();
+                while(*it != *it2){
+                    it++;
+                }
+                for(vector<IRNode*>::size_type i = 0; i <  childrenParent->size(); ++i){
+                        cout << childrenParent->at(i)->NodeType() << childrenParent->at(i)->Id();
+                }
+
+                cout << endl;
+            }
+            
+            
+            static_cast<StatList*>(getParent())->printContent();
         }
     }
     

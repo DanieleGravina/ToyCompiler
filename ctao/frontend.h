@@ -16,6 +16,7 @@
 #include<vector>
 #include "lexer.h"
 #include "ir.h"
+#include "cfg.h"
 
 using namespace std;
 
@@ -33,6 +34,7 @@ public:
     
     ~frontend(){
         delete global_symtab;
+        delete bbs;
     }
     
     
@@ -52,6 +54,22 @@ public:
         
         root->repr();
         
+        root->flattening();        
+        
+        cout << "after flattening" << endl;
+        
+        root->repr();
+        
+        list<IRNode*>* statlists = new list<IRNode*>();
+        
+        root->getStatLists(statlists);
+        
+        /*while(statlists->size() != 0){
+            bbs = IRtoBB(statlists->front());
+            statlists->pop_front();
+        }
+        
+        delete statlists;*/
     }
     
     
@@ -66,6 +84,8 @@ private:
     int value;
     
     SymbolTable* global_symtab;
+    
+    std::list<BasicBlock*>* bbs;
     
     int getNextToken() {
         return CurTok = lex.next();
