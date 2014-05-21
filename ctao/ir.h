@@ -506,10 +506,10 @@ private:
 
 
 
-class StatList : public IRNode {
+class StatList : public Stat {
 public:
     StatList(SymbolTable* symtab )
-    :IRNode(NULL, NULL, symtab){
+    :Stat(symtab){
         
         cout << "StatList new " << Id() << endl;
     }
@@ -521,6 +521,23 @@ public:
         cout << "Append stat " << stat->Id() << " to " << Id() << endl;
         
         addChildren(stat);
+    }
+    
+    /**
+     * Makes one statlist from  nested statlists
+     */
+    void flatten(){
+        if(getParent()->NodeType() == "StatList"){
+            cout << "flattening of StatList " << Id() << "in " << getParent()->Id() << endl;
+            
+            for(vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i){
+                getChildren()->at(i)->setParent(getParent());
+            }
+            
+            if(getLabel()){
+                getChildren()->at(0).setLabel(getLabel()); //??delete
+            }
+        }
     }
     
     void printContent(){
