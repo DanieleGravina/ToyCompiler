@@ -46,6 +46,10 @@ public :
     
     Type(string _name, size_t _size, int _basetype)
             :name(_name), size(_size), basetype(_basetype){}
+
+    size_t getSize() const{
+        return size;
+    }       
     
 private:
     string name;
@@ -99,6 +103,10 @@ public:
     
     const Value& getValue() const{
         return value;
+    }
+
+    void setValue(Value val){
+        value = val
     }
     
     ~Symbol(){
@@ -253,6 +261,13 @@ public:
     
     SymbolTable* getSymTab(){
         return symtab;
+    }
+
+    /**
+    * return uses, if not implemented return NULL
+    */
+    virtual std::list<Symbol*>* get_uses(){
+        return NULL;
     }
     
     void repr(){
@@ -478,18 +493,26 @@ public:
     
     void setLabel(Symbol* _label){
         label = _label;
+        label->value = this;
     }
     
     Symbol* getLabel() const{
         return label;
     }
     
-    IRNode& getFunction(){
-        if(1){
-            
+    /**
+    *return null if global
+    *@return *IRNode
+    */
+    IRNode* getFunction(){
+        if(getParent()){
+            if(getParent()->NodeType() == "FunctionDef")
+                return getParent();
+            else
+                return static_cast<Stat*>(getParent())->getFunction();        
         }
         else{
-            //TODO
+            return NULL; 
         }
     }
     
@@ -507,6 +530,50 @@ public:
     
 private:
     Symbol* label;
+};
+
+class LoadStat: public Stat{
+public:
+    
+    LoadStat(IRNode* _expr, SymbolTable* symtab) : 
+        Stat(symtab){
+            _expr->setParent(this);
+            vector<IRNode*>* children = new vector<IRNode*>();
+            children->push_back(_expr);
+            setChildren(children);
+            
+        } 
+    
+    virtual const string& NodeType(){
+        static string s = "Load";
+        
+        return s;
+    }
+};
+
+class StoreStat: public Stat{
+public:
+    
+    LoadStat(IRNode* expr_left, IRNode* expr_left, SymbolTable* symtab) : 
+        Stat(symtab){
+            expr_left->setParent(this);
+            expr_right->setParent(this);
+            vector<IRNode*>* children = new vector<IRNode*>();
+            children->push_back(expr_left);
+            children->push_back(expr_right);
+            setChildren(children);
+            
+        } 
+
+    virtual std::list<Symbol*>* get_uses(){
+        return new std::list<Symbol*>(this);
+    }    
+    
+    virtual const string& NodeType(){
+        static string s = "Load";
+        
+        return s;
+    }
 };
 
 class BranchStat: public Stat{
@@ -679,6 +746,31 @@ public:
        children->push_back(expr_right);
        
        setChildren(children);
+    }
+
+    virtual void lower(){
+        vector<IRNode*>* child = new vector<IRNode*>();
+        child->push_back(expr_left);
+
+        Expr* mul = new BinExpr(token::times, expr_left, 
+                            new Const(standard_types[BaseType::INT]->getSize(), getSymTab()), getSymTab());
+
+        Var *array = new Var(sym, getSymTab());
+
+        LoadStat* mem = new LoadStat(array, getSymTab());
+
+        vector<IRNode*>* child2 = new vector<IRNode*>();
+        child2->push_back(mul);
+        child2->push_back(mem);
+
+        Expr* sum = new BinExpr(token::sum, child2, getSymTab());
+
+        LoadStat* final = new LoadStat(sum, getSymTab());
+
+        StoreStat* assign = new StoreStat(final, expr_right, getSymTab());
+
+        getParent()->replace(this, assign);
+
     }
     
     virtual const string& NodeType(){
