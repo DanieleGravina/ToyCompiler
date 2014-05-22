@@ -35,7 +35,7 @@ public:
     }
     
     void setNext(BasicBlock* next_block){
-        //next = next_block;
+        next = next_block;
     }
     
 private:
@@ -47,7 +47,7 @@ private:
 
 std::list<BasicBlock*>* IRtoBB(IRNode* l){
     
-    BasicBlock* bb;
+    BasicBlock* bb = NULL;
     std::list<BasicBlock*>* lBB = new std::list<BasicBlock*>();
     std::list<Symbol*>* labels = new std::list<Symbol*>();
     std::list<IRNode*>* stats = new std::list<IRNode*>();
@@ -56,11 +56,11 @@ std::list<BasicBlock*>* IRtoBB(IRNode* l){
     for(vector<IRNode*>::iterator it = l->getChildren()->begin(); it != l->getChildren()->end(); ++it){
         Symbol* label = static_cast<StatList*>(*it)->getLabel();
         
-        if(label){
+        if(label != NULL){
             
-            if(bb){ //start new bb
+			if(stats->size()){ //start new bb
+				bb = new BasicBlock(stats, labels);
                 lBB->push_back(bb);
-                bb = new BasicBlock(stats, labels);
                 stats = new std::list<IRNode*>();
                 lBB->back()->setNext(bb);
                 labels = new std::list<Symbol*>();
@@ -71,9 +71,9 @@ std::list<BasicBlock*>* IRtoBB(IRNode* l){
         stats->push_back(*it);
         
         if((*it)->NodeType() == "Branch" || (*it)->NodeType() == "CallStat"){
-             if(bb){ //start new bb
+            if(stats->size()){ //start new bb
+				bb = new BasicBlock(stats, labels);
                 lBB->push_back(bb);
-                bb = new BasicBlock(stats, labels);
                 stats = new std::list<IRNode*>();
                 lBB->back()->setNext(bb);
                 labels = new std::list<Symbol*>();

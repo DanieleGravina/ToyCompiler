@@ -652,8 +652,10 @@ public:
             for(vector<IRNode*>::size_type i = 1; i < getChildren()->size(); ++i){
                 getChildren()->at(i)->setParent(getParent());
             }
+
+			vector<IRNode*>* childrenParent = getParent()->getChildren();
             
-            vector<IRNode*>::iterator it = getParent()->getChildren()->begin();
+			vector<IRNode*>::iterator it = childrenParent->begin();
             vector<IRNode*>::iterator it2 = getChildren()->begin();
             
             while(*it != this){
@@ -661,8 +663,6 @@ public:
             }
             
             cout << "replacing 0 child" << endl;
-            
-            vector<IRNode*>* childrenParent = getParent()->getChildren();
             
             for(vector<IRNode*>::size_type i = 0; i <  getChildren()->size(); ++i){
                         cout << getChildren()->at(i)->NodeType() << getChildren()->at(i)->Id();
@@ -689,7 +689,7 @@ public:
             
             for(; it != childrenParent->end() && it2 != getChildren()->end(); ++it, ++it2){
                 childrenParent->insert(it, *it2);
-                it != childrenParent->begin();
+                it = childrenParent->begin();
                 while(*it != *it2){
                     it++;
                 }

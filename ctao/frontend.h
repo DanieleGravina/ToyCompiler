@@ -60,7 +60,7 @@ public:
         
         root->repr();
         
-        /*list<IRNode*>* statlists = new list<IRNode*>();
+        list<IRNode*>* statlists = new list<IRNode*>();
         
         root->getStatLists(statlists);
         
@@ -68,7 +68,7 @@ public:
             IRtoBB(*it);
         }
         
-        delete statlists;*/
+        delete statlists;
     }
     
     
