@@ -106,7 +106,7 @@ public:
     }
 
     void setValue(Value val){
-        value = val
+        value = val;
     }
     
     ~Symbol(){
@@ -266,7 +266,7 @@ public:
     /**
     * return uses, if not implemented return NULL
     */
-    virtual std::list<Symbol*>* get_uses(){
+    virtual std::list<IRNode*>* get_uses(){
         return NULL;
     }
     
@@ -327,7 +327,7 @@ public:
             }
         }
         
-        if(NodeType() == "StatList" && statlists)
+        if(NodeType() == "StatList" )
             statlists->push_back(this);
     }
     
@@ -367,6 +367,22 @@ private:
     vector<IRNode*> delete_list;
     SymbolTable* symtab;
     
+};
+
+class Var : public IRNode{
+public:    
+    Var(Symbol* _symbol, SymbolTable* symtab) : symbol(_symbol), IRNode(NULL, NULL, symtab){
+        
+    }
+    
+    virtual const string& NodeType(){
+        static string s = "Var";
+        
+        return s;
+    }
+    
+private:
+    Symbol* symbol;
 };
 
 class Const : public IRNode{
@@ -493,7 +509,7 @@ public:
     
     void setLabel(Symbol* _label){
         label = _label;
-        label->value = this;
+        //label->setValue(this);
     }
     
     Symbol* getLabel() const{
@@ -554,26 +570,28 @@ public:
 class StoreStat: public Stat{
 public:
     
-    LoadStat(IRNode* expr_left, IRNode* expr_left, SymbolTable* symtab) : 
-        Stat(symtab){
-            expr_left->setParent(this);
+    StoreStat(Symbol* _sym, IRNode* expr_right, SymbolTable* symtab) : 
+        sym(_sym), Stat(symtab){
             expr_right->setParent(this);
             vector<IRNode*>* children = new vector<IRNode*>();
-            children->push_back(expr_left);
             children->push_back(expr_right);
             setChildren(children);
-            
         } 
 
-    virtual std::list<Symbol*>* get_uses(){
-        return new std::list<Symbol*>(this);
+    virtual std::list<IRNode*>* get_uses(){
+        std::list<IRNode*>* temp = new std::list<IRNode*>();
+        temp->push_back(this);
+        return temp;
     }    
     
     virtual const string& NodeType(){
-        static string s = "Load";
+        static string s = "StoreStat";
         
         return s;
     }
+    
+private:
+    Symbol* sym;
 };
 
 class BranchStat: public Stat{
@@ -749,13 +767,17 @@ public:
     }
 
     virtual void lower(){
+        IRNode* expr_left = getChildren()->at(0);
+        IRNode* expr_right = getChildren()->at(1);
+        
+        
         vector<IRNode*>* child = new vector<IRNode*>();
         child->push_back(expr_left);
+        child->push_back(new Const(standard_types[BaseType::INT]->getSize(), getSymTab()));
 
-        Expr* mul = new BinExpr(token::times, expr_left, 
-                            new Const(standard_types[BaseType::INT]->getSize(), getSymTab()), getSymTab());
+        Expr* mul = new BinExpr(token::times, child, getSymTab());
 
-        Var *array = new Var(sym, getSymTab());
+        Var* array = new Var(sym, getSymTab());
 
         LoadStat* mem = new LoadStat(array, getSymTab());
 
@@ -763,11 +785,20 @@ public:
         child2->push_back(mul);
         child2->push_back(mem);
 
-        Expr* sum = new BinExpr(token::sum, child2, getSymTab());
+        IRNode* sum = new BinExpr(token::plus, child2, getSymTab());
+        
+        Symbol* temp = new Symbol();
+        
+        AssignStat* assign_temp = new AssignStat(temp, sum, getSymTab());
 
-        LoadStat* final = new LoadStat(sum, getSymTab());
-
-        StoreStat* assign = new StoreStat(final, expr_right, getSymTab());
+        StoreStat* assign = new StoreStat(temp, expr_right, getSymTab());
+        
+        StatList *statements = new StatList(getSymTab());
+        
+        statements->append(assign_temp);
+        statements->append(assign);
+        
+        statements->setParent(getParent());
 
         getParent()->replace(this, assign);
 
@@ -1057,24 +1088,6 @@ private:
     IRNode* body;
     
 };
-
-class Var : public IRNode{
-public:    
-    Var(Symbol* _symbol, SymbolTable* symtab) : symbol(_symbol), IRNode(NULL, NULL, symtab){
-        
-    }
-    
-    virtual const string& NodeType(){
-        static string s = "Var";
-        
-        return s;
-    }
-    
-private:
-    Symbol* symbol;
-};
-
-
 
 
 

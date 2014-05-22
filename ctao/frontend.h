@@ -34,7 +34,7 @@ public:
     
     ~frontend(){
         delete global_symtab;
-        delete bbs;
+        //delete bbs;
     }
     
     
@@ -60,13 +60,12 @@ public:
         
         root->repr();
         
-        list<IRNode*>* statlists = new list<IRNode*>();
+        /*list<IRNode*>* statlists = new list<IRNode*>();
         
         root->getStatLists(statlists);
         
-        /*while(statlists->size() != 0){
-            bbs = IRtoBB(statlists->front());
-            statlists->pop_front();
+        for(list<IRNode*>::iterator it = statlists->begin(); it != statlists->end(); ++it){
+            IRtoBB(*it);
         }
         
         delete statlists;*/
