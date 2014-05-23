@@ -105,9 +105,17 @@ public:
         return value;
     }
 
-    void setValue(Value val){
+	void setValue(Value val){
         value = val;
     }
+
+	void setTarget(void* _target){
+		target = _target;
+	}
+
+	void* getTarget(){
+		return target;
+	}
     
     ~Symbol(){
         delete stype;
@@ -118,7 +126,8 @@ public:
 private:
     const string name;
     Type* stype;
-    Value value;
+	Value value;
+	void* target;
 };
 
 
@@ -184,7 +193,9 @@ class LabelType : public Type{
 public :
     LabelType() : Type("Label", 0, BaseType::LABEL){};
     
-    Symbol* Label(Value target = 0){
+	Symbol* Label(void* target = NULL){
+
+		Symbol* sym;
         
         static int ids = 0;
         
@@ -196,7 +207,11 @@ public :
 
         name = convert.str();
         
-        return new Symbol(name, this, target);
+		sym = new Symbol(name, this);
+
+		sym->setTarget(target);
+
+        return sym;
     }
 };
 
@@ -266,7 +281,7 @@ public:
     /**
     * return uses, if not implemented return NULL
     */
-    virtual std::list<IRNode*>* get_uses(){
+    virtual std::list<Symbol*>* get_uses(){
         return NULL;
     }
     
@@ -505,11 +520,11 @@ class Stat : public IRNode{
 public:
     
     Stat(SymbolTable* symtab): 
-        IRNode(NULL, NULL, symtab){}
+		IRNode(NULL, NULL, symtab), label(NULL){}
     
     void setLabel(Symbol* _label){
         label = _label;
-        //label->setValue(this);
+        label->setTarget(this);
     }
     
     Symbol* getLabel() const{
@@ -578,9 +593,9 @@ public:
             setChildren(children);
         } 
 
-    virtual std::list<IRNode*>* get_uses(){
-        std::list<IRNode*>* temp = new std::list<IRNode*>();
-        temp->push_back(this);
+    virtual std::list<Symbol*>* get_uses(){
+        std::list<Symbol*>* temp = new std::list<Symbol*>();
+        temp->push_back(sym);
         return temp;
     }    
     

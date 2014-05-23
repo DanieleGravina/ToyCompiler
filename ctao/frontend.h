@@ -244,9 +244,9 @@ private:
                 }
                 
                 Symbol* target = symtab->find(lex.Identifier());
-		expect(token::becomes);
+				expect(token::becomes);
                 IRNode* expr = expression(symtab);
-		return new AssignStat(target, expr, symtab);
+				return new AssignStat(target, expr, symtab);
                 break;
             }
                 
@@ -365,6 +365,15 @@ private:
     
     IRNode* factor(SymbolTable *symtab){
         if (accept(token::identifier)) {
+
+			if(accept(token::lsquare)){
+                    //TODO review expr_left, could be dangerous
+                    IRNode* expr_left = expression(symtab);
+                    Symbol* target = symtab->find(lex.Identifier());
+                    expect(token::rsquare);
+                    return new ArrayVar(symtab->find(lex.Identifier()), symtab);
+            }
+
             return new Var(symtab->find(lex.Identifier()), symtab);
         
         } else if (accept(token::number)) {

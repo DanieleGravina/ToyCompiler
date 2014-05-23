@@ -94,6 +94,18 @@ int lexer::next(){
         std::cout << identifier_str << std::endl;
         
         it = punctuation.find(identifier_str);
+
+		while(it == punctuation.end() && identifier_str.size() > 1){
+			
+			identifier_str = identifier_str.substr(0, identifier_str.size() - 1);
+
+			_p--;
+
+			std::cout << identifier_str << std::endl;
+
+			it = punctuation.find(identifier_str);
+		}
+
         
         if(it != punctuation.end()){
            return  it->second;

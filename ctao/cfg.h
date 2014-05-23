@@ -9,13 +9,23 @@
 #define	CFG_H
 
 #include<list>
+#include<set>
 #include "ir.h"
 
 class BasicBlock{
 public:
     
     BasicBlock(std::list<IRNode*>* _stats = NULL, list<Symbol*>* _labels = NULL)
-            :stats(_stats), labels(_labels){}
+            :stats(_stats), labels(_labels), target(NULL), next(NULL){
+
+				if(static_cast<Stat*>(stats->back())->getLabel())
+					target = static_cast<IRNode*>(static_cast<Stat*>(stats->back())->getLabel()->getTarget());
+
+
+
+
+
+	}
     
     ~BasicBlock(){
         if(next){
@@ -40,9 +50,11 @@ public:
     
 private:
     BasicBlock* next;
-    BasicBlock* branch;
+    BasicBlock* bb_target;
+	IRNode* target;
     std::list<IRNode*>* stats;
     std::list<Symbol*>* labels;
+	std::set<IRNode*>* live_in;
 };
 
 std::list<BasicBlock*>* IRtoBB(IRNode* l){
