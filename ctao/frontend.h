@@ -368,10 +368,10 @@ private:
 
 			if(accept(token::lsquare)){
                     //TODO review expr_left, could be dangerous
-                    IRNode* expr_left = expression(symtab);
+                    IRNode* index = expression(symtab);
                     Symbol* target = symtab->find(lex.Identifier());
                     expect(token::rsquare);
-                    return new ArrayVar(symtab->find(lex.Identifier()), symtab);
+                    return new ArrayVar(symtab->find(lex.Identifier()), index, symtab);
             }
 
             return new Var(symtab->find(lex.Identifier()), symtab);

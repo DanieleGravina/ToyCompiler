@@ -24,6 +24,7 @@ int main(int argc, char **argv){
     " BEGIN "
     " x := 1; "
     " y[x]:=1;"
+	" a := y[1]; "
     " WHILE x <= 10 DO "
     "  BEGIN "
     "  CALL square x ; "

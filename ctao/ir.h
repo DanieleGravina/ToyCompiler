@@ -285,20 +285,31 @@ public:
         return NULL;
     }
     
-    void repr(){
+    void repr(int space = 0){
         
-        string parent = "";
-        
-        if (getParent() != NULL)
+        string parent = "Global";
+		string id = "";
+		ostringstream convert;
+    
+        if (getParent() != NULL){
             parent = getParent()->NodeType();
+			convert << getParent()->Id();
+			id = convert.str();
+		}
         
-        cout << "Node: " << NodeType() << " " << Id() << " parent: " << parent << endl;
+		cout << "Node: " << NodeType() << " " << Id() << " parent: " << parent << " " << id << endl;
         
         if(hasChildren()){
             
+			space++;
+
             for(vector<IRNode*>::iterator it = children->begin(); it != children->end(); ++it){
-                cout << " ";
-                (*it)->repr();
+				int index = space;
+				while(index != 0){
+					index--;
+					cout << "  ";
+				}
+                (*it)->repr(space);
             }
         }
     }
@@ -413,6 +424,27 @@ private:
     Value value;
 };
 
+class ArrayVar : public IRNode{
+	public:    
+		ArrayVar(Symbol* _symbol, IRNode* index, SymbolTable* symtab) : 
+			symbol(_symbol), IRNode(NULL, NULL, symtab){
+        
+		index->setParent(this);
+        vector<IRNode*>* children = new vector<IRNode*>();
+        children->push_back(index);
+        setChildren(children);
+    }
+    
+    virtual const string& NodeType(){
+        static string s = "ArrayVar";
+        
+        return s;
+    }
+    
+private:
+    Symbol* symbol;
+};
+
 class Tok : public IRNode{
 public:
     Tok(int _tok, SymbolTable* symtab):tok(_tok), IRNode(NULL,NULL,symtab){
@@ -462,6 +494,24 @@ public:
         
         setChildren(children);
         
+	}
+
+	virtual std::list<Symbol*>* get_uses(){
+
+		std::list<Symbol*>* l = NULL;
+
+		if(hasChildren()){
+			l = new list<Symbol*>();
+
+			for(vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i){
+				if(getChildren()->at(i)->get_uses() != NULL){
+					l->merge( *(getChildren()->at(i)->get_uses()) );
+					delete (getChildren()->at(i)->get_uses());
+				}
+			}
+		}
+
+		return NULL;
     }
         
     virtual const string& NodeType(){
@@ -659,6 +709,8 @@ public:
         if(getParent()->NodeType() == "StatList"){
             cout << "flattening of StatList " << Id() << "in " << getParent()->Id() << endl;
             
+			printContent();
+			static_cast<StatList*>(getParent())->printContent();
             
             if(getLabel()){
                 static_cast<Stat*>(getChildren()->at(0))->setLabel(getLabel()); //??delete
@@ -677,39 +729,18 @@ public:
                 it++;
             }
             
-            cout << "replacing 0 child" << endl;
-            
-            for(vector<IRNode*>::size_type i = 0; i <  getChildren()->size(); ++i){
-                        cout << getChildren()->at(i)->NodeType() << getChildren()->at(i)->Id();
-            }
-            
-            cout << endl;
-            
-            for(vector<IRNode*>::size_type i = 0; i <  childrenParent->size(); ++i){
-                        cout << childrenParent->at(i)->NodeType() << childrenParent->at(i)->Id();
-            }
-            
-            cout << endl;
-            
             getParent()->replace(this, getChildren()->at(0));
             
             it++;
             it2++;
             
-            for(vector<IRNode*>::size_type i = 0; i <  childrenParent->size(); ++i){
-                        cout << childrenParent->at(i)->NodeType() << childrenParent->at(i)->Id();
-            }
-            
             cout << endl;
-            
-            for(; it != childrenParent->end() && it2 != getChildren()->end(); ++it, ++it2){
+
+            for(; it2 != getChildren()->end(); ++it, ++it2){
                 childrenParent->insert(it, *it2);
                 it = childrenParent->begin();
                 while(*it != *it2){
                     it++;
-                }
-                for(vector<IRNode*>::size_type i = 0; i <  childrenParent->size(); ++i){
-                        cout << childrenParent->at(i)->NodeType() << childrenParent->at(i)->Id();
                 }
 
                 cout << endl;
@@ -723,7 +754,7 @@ public:
     void printContent(){
         if(hasChildren()){
             
-            cout << "StatList " << Id() << ":" << endl;
+            cout << "StatList " << Id() << ": ";
             
             cout << "[";
             
