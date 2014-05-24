@@ -640,6 +640,12 @@ public:
             delete label;
     }
     
+    virtual std::list<Symbol*>* get_uses(){
+
+	return new std::list<Symbol*>();
+		
+    }
+    
     
     virtual const string& NodeType(){
         static string s = "Stat";

@@ -32,7 +32,9 @@ public:
 
 				
 				for(list<IRNode*>::iterator it = stats->begin(); it != stats->end(); ++it){
-
+                                        
+                                        cout << (*it)->NodeType() << endl;
+                                        
 					for(list<Symbol*>::iterator it2 = (*it)->get_uses()->begin(); it2 != (*it)->get_uses()->end(); ++it2){
 						uses.insert(*it2);
 					}

@@ -253,24 +253,25 @@ private:
             case token::callsym :
             {
                 int tok = token::callsym;
-                cout << "accepting " << token::callsym << " == " << CurTok << endl;
+                cout << "accepting call" << token::callsym << " == " << CurTok << endl;
                 getNextToken();
                 expect(token::identifier);
 
-				vector<IRNode*>* parameters = new vector<IRNode*>(); 
-                
-                if(accept(token::identifier)){
-					
-				  parameters->push_back(term(symtab));
+                vector<IRNode*>* parameters = new vector<IRNode*>(); 
+                    
+                do{
+                    if (accept(token::identifier)) {
+                        parameters->push_back(new Var(symtab->find(lex.Identifier()), symtab));
 
-                  while(accept(token::comma)){
-                      expect(token::identifier);
-                      parameters->push_back(term(symtab));
-				  }
-                }
+                    }else if (accept(token::number)) {
+
+                        parameters->push_back(new Const(lex.Value(), symtab));
+                    }
+
+                }while(accept(token::comma));
 
                 
-				return new CallStat(new CallExpr(symtab->find(lex.Identifier()), tok, parameters, symtab), symtab);
+		return new CallStat(new CallExpr(symtab->find(lex.Identifier()), tok, parameters, symtab), symtab);
                 break;
             }
                 

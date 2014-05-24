@@ -4,6 +4,7 @@
 
 lexer::lexer(const char* p){
     _p = p;   
+    init();
 }
 
 lexer::lexer(ifstream* _in): in(_in){
