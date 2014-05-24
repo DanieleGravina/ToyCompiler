@@ -256,13 +256,21 @@ private:
                 cout << "accepting " << token::callsym << " == " << CurTok << endl;
                 getNextToken();
                 expect(token::identifier);
+
+				vector<IRNode*>* parameters = new vector<IRNode*>(); 
                 
                 if(accept(token::identifier)){
-                  while(accept(token::comma))
+					
+				  parameters->push_back(term(symtab));
+
+                  while(accept(token::comma)){
                       expect(token::identifier);
+                      parameters->push_back(term(symtab));
+				  }
                 }
+
                 
-                return new CallStat(new CallExpr(symtab->find(lex.Identifier()), tok, symtab), symtab);
+				return new CallStat(new CallExpr(symtab->find(lex.Identifier()), tok, parameters, symtab), symtab);
                 break;
             }
                 
@@ -295,9 +303,9 @@ private:
                 cout << "accepting" << " while " << token::whilesym << " == " << CurTok << endl;
                 getNextToken();
                 IRNode *cond = condition(symtab);
-		expect(token::dosym);
+				expect(token::dosym);
                 IRNode* body = statement(symtab);
-		return new WhileStat(cond, body, symtab);
+				return new WhileStat(cond, body, symtab);
                 break;
             }    
             case token::print :

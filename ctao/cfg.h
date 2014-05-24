@@ -16,14 +16,48 @@ class BasicBlock{
 public:
     
     BasicBlock(std::list<IRNode*>* _stats = NULL, list<Symbol*>* _labels = NULL)
-            :stats(_stats), labels(_labels), target(NULL), next(NULL){
+		:stats(_stats), labels(_labels), target(NULL), next(NULL), total_var_used(0){
+
+
+				std::set<Symbol*> uses;	
 
 				if(static_cast<Stat*>(stats->back())->getLabel())
 					target = static_cast<IRNode*>(static_cast<Stat*>(stats->back())->getLabel()->getTarget());
 
+				live_in = new std::set<IRNode*>();
+				live_out = new std::set<IRNode*>();
 
+				kill = new std::set<Symbol*>(); //assigned
+				gen = new std::set<Symbol*>();  // use before assign
 
+				
+				for(list<IRNode*>::iterator it = stats->begin(); it != stats->end(); ++it){
 
+					for(list<Symbol*>::iterator it2 = (*it)->get_uses()->begin(); it2 != (*it)->get_uses()->end(); ++it2){
+						uses.insert(*it2);
+					}
+
+					delete (*it)->get_uses();
+
+					for(set<Symbol*>::iterator it3 = kill->begin(); it3 != kill->end(); ++it3){
+						uses.erase(*it3);
+					}
+
+					for(set<Symbol*>::iterator it4 = uses.begin(); it4 != uses.end(); ++it4){
+						gen->insert(*it4);
+					}
+
+					if((*it)->NodeType() == "AssignStat" || (*it)->NodeType() == "StoreStat"){
+						kill->insert(static_cast<Stat*>(*it)->getSymbol());
+					}
+
+				}
+
+				for(set<Symbol*>::iterator it = kill->begin(); it != kill->end(); ++it){
+						gen->insert(*it);
+				}
+
+				total_var_used = gen->size();
 
 	}
     
@@ -34,6 +68,10 @@ public:
         }
         delete stats;
         delete labels;
+		delete live_in;
+		delete live_out;
+		delete kill;
+		delete gen;
     }
     
     /**
@@ -55,6 +93,10 @@ private:
     std::list<IRNode*>* stats;
     std::list<Symbol*>* labels;
 	std::set<IRNode*>* live_in;
+	std::set<IRNode*>* live_out;
+	std::set<Symbol*>* kill;
+	std::set<Symbol*>* gen;
+	int total_var_used;
 };
 
 std::list<BasicBlock*>* IRtoBB(IRNode* l){
@@ -66,7 +108,7 @@ std::list<BasicBlock*>* IRtoBB(IRNode* l){
     
     
     for(vector<IRNode*>::iterator it = l->getChildren()->begin(); it != l->getChildren()->end(); ++it){
-        Symbol* label = static_cast<StatList*>(*it)->getLabel();
+        Symbol* label = static_cast<Stat*>(*it)->getLabel();
         
         if(label != NULL){
             

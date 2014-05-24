@@ -173,7 +173,9 @@ public:
             return NULL;
     }
     
-    void exclude();
+    void exclude(){
+
+	}
     
     void append(Symbol *symbol){
         table[symbol->getName()] = symbol;
@@ -400,6 +402,17 @@ public:
     Var(Symbol* _symbol, SymbolTable* symtab) : symbol(_symbol), IRNode(NULL, NULL, symtab){
         
     }
+
+	virtual std::list<Symbol*>* get_uses(){
+
+		std::list<Symbol*>* l = NULL;
+
+		l = new list<Symbol*>();
+
+		l->push_back(symbol);
+
+		return l;
+    }
     
     virtual const string& NodeType(){
         static string s = "Var";
@@ -433,6 +446,24 @@ class ArrayVar : public IRNode{
         vector<IRNode*>* children = new vector<IRNode*>();
         children->push_back(index);
         setChildren(children);
+    }
+
+	virtual std::list<Symbol*>* get_uses(){
+
+		std::list<Symbol*>* l = NULL;
+
+		if(hasChildren()){
+			l = new list<Symbol*>();
+
+			for(vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i){
+				if(getChildren()->at(i)->get_uses() != NULL){
+					l->merge( *(getChildren()->at(i)->get_uses()) );
+					delete (getChildren()->at(i)->get_uses());
+				}
+			}
+		}
+
+		return l;
     }
     
     virtual const string& NodeType(){
@@ -471,6 +502,24 @@ public:
     IRNode* getOperator() const{
         return getChildren()->at(0);
     }
+
+	virtual std::list<Symbol*>* get_uses(){
+
+		std::list<Symbol*>* l = NULL;
+
+		if(hasChildren()){
+			l = new list<Symbol*>();
+
+			for(vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i){
+				if(getChildren()->at(i)->get_uses() != NULL){
+					l->merge( *(getChildren()->at(i)->get_uses()) );
+					delete (getChildren()->at(i)->get_uses());
+				}
+			}
+		}
+
+		return l;
+    }
     
     virtual const string& NodeType(){
         static string s = "Expr";
@@ -495,24 +544,6 @@ public:
         setChildren(children);
         
 	}
-
-	virtual std::list<Symbol*>* get_uses(){
-
-		std::list<Symbol*>* l = NULL;
-
-		if(hasChildren()){
-			l = new list<Symbol*>();
-
-			for(vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i){
-				if(getChildren()->at(i)->get_uses() != NULL){
-					l->merge( *(getChildren()->at(i)->get_uses()) );
-					delete (getChildren()->at(i)->get_uses());
-				}
-			}
-		}
-
-		return NULL;
-    }
         
     virtual const string& NodeType(){
         static string s = "BinExpr";
@@ -547,10 +578,13 @@ public:
 
 class CallExpr : public Expr{
 public:    
-    CallExpr(Symbol* sym, int op, SymbolTable* symtab):
+    CallExpr(Symbol* sym, int op, vector<IRNode*>* parameters, SymbolTable* symtab):
         Expr(op, symtab), function(sym)
     {
-        
+		for(vector<IRNode*>::size_type i = 0; i < parameters->size(); ++i)
+			parameters->at(i)->setParent(this);
+		
+		setChildren(parameters);
     }
         
     virtual const string& NodeType(){
@@ -596,6 +630,10 @@ public:
             return NULL; 
         }
     }
+
+	virtual Symbol* getSymbol(){
+		return NULL;
+	}
     
     virtual ~Stat(){
         if(label)
@@ -648,6 +686,10 @@ public:
         temp->push_back(sym);
         return temp;
     }    
+
+	virtual Symbol* getSymbol(){
+		return sym;
+	}
     
     virtual const string& NodeType(){
         static string s = "StoreStat";
@@ -670,6 +712,24 @@ public:
             setChildren(children);
             
         } 
+
+	virtual std::list<Symbol*>* get_uses(){
+
+		std::list<Symbol*>* l = NULL;
+
+		if(hasChildren()){
+			l = new list<Symbol*>();
+
+			for(vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i){
+				if(getChildren()->at(i)->get_uses() != NULL){
+					l->merge( *(getChildren()->at(i)->get_uses()) );
+					delete (getChildren()->at(i)->get_uses());
+				}
+			}
+		}
+
+		return l;
+    }
     
     virtual const string& NodeType(){
         static string s = "Branch";
@@ -785,6 +845,10 @@ public:
        
        setChildren(children);
     }
+
+	virtual Symbol* getSymbol(){
+		return sym;
+	}
     
     virtual const string& NodeType(){
         static string s = "AssignStat";

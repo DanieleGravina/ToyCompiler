@@ -11,6 +11,7 @@
 #include<map>
 #include<string>
 #include<cstdio>
+#include <fstream>
 
 using namespace std;
 
@@ -66,7 +67,9 @@ class lexer{
     
 public:
     
-    lexer(const char *p);
+    lexer(ifstream* _in);
+
+	lexer(const char *p);
     
     ~lexer(){
         
@@ -83,8 +86,13 @@ public:
     }
     
 private:
+
+	void init();
+
+	char get_next();
     
     const char *_p;
+	ifstream *in;
     
     string identifier_str;  
     int num_val;    
@@ -95,8 +103,6 @@ private:
     map<string, token::TokenType>::iterator it;
     
     lexer&  operator=(lexer& rhs);  
-    
-    
 };
         
 
