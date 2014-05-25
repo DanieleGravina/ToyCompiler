@@ -60,15 +60,13 @@ public:
         
         root->repr();
         
-        list<IRNode*>* statlists = new list<IRNode*>();
-        
-        root->getStatLists(statlists);
-        
-        for(list<IRNode*>::iterator it = statlists->begin(); it != statlists->end(); ++it){
-            IRtoBB(*it);
-        }
-        
-        delete statlists;
+        CFG cfg(static_cast<IRNode*>(root));
+
+		cfg.liveness();
+
+		cfg.print_liveness();
+
+		
     }
     
     
@@ -79,8 +77,10 @@ private:
     lexer lex;
     
     int CurTok;
-    
-    int value;
+
+	int value;
+
+	string name;
     
     SymbolTable* global_symtab;
     
@@ -125,68 +125,69 @@ private:
         
         DefinitionList* defs = new DefinitionList();
         
-        string name;
-        
         if(accept(token::constsym)){
             
+			name = lex.Identifier();
             expect(token::identifier);
             
-            name = lex.Identifier(); 
             expect(token::eql);
             expect(token::number);
-	    local_vars->append(new Symbol(name, standard_types[BaseType::INT], lex.Value()));
+			cout << "const " << name << endl;
+			local_vars->append(new Symbol(name, standard_types[BaseType::INT], lex.Value()));
             
 	    while ( accept(token::comma) ) {
-			expect(token::identifier);
-			name = lex.Identifier(); 
-                        expect(token::eql);
-                        expect(token::number);
-			local_vars->append(new Symbol(name, standard_types[BaseType::INT], lex.Value()));
+				expect(token::identifier);
+				name = lex.Identifier(); 
+				expect(token::eql);
+				expect(token::number);
+				cout << "const " << name << endl;
+				local_vars->append(new Symbol(name, standard_types[BaseType::INT], lex.Value()));
             }
             
 	    expect(token::semicolon);
             
         }
         if(accept(token::varsym)){
-            
+
+			string name = lex.Identifier();   
             expect(token::identifier);
-            
-            local_vars->append(new Symbol(lex.Identifier(), standard_types[BaseType::INT]));
+
+            cout << "var " << name << endl;
+            local_vars->append(new Symbol(name, standard_types[BaseType::INT]));
+
             while (accept(token::comma)){
+					name = lex.Identifier();
                     expect(token::identifier);
-                    local_vars->append(new Symbol(lex.Identifier(), standard_types[BaseType::INT]));
+					cout << "var " << name << endl;
+                    local_vars->append(new Symbol(name, standard_types[BaseType::INT]));
             }
             expect(token::semicolon); 
            
         }
         
         if(accept(token::arraysym)){
-            
-            int num;
-            
-            string id;
+         
+			name = lex.Identifier();
             
             expect(token::identifier);
             
-            id = lex.Identifier();
-            
             expect(token::lsquare);
+
+			value = lex.Value();
             
             expect(token::number);
             
-            num = lex.Value(); 
-            
             expect(token::rsquare);
             
-            local_vars->append(new Symbol(id, new ArrayType("array", num, BaseType::INT)));
+            local_vars->append(new Symbol(name, new ArrayType("array", value, BaseType::INT)));
             while (accept(token::comma)){
+					name = lex.Identifier();
                     expect(token::identifier);
-                    id = lex.Identifier();
                     expect(token::lsquare);
+					value = lex.Value(); 
                     expect(token::number);
-                    num = lex.Value(); 
                     expect(token::rsquare);
-                    local_vars->append(new Symbol(lex.Identifier(), new ArrayType("array", num, BaseType::INT)));
+                    local_vars->append(new Symbol(lex.Identifier(), new ArrayType("array", value, BaseType::INT)));
             }
             expect(token::semicolon); 
            
@@ -194,20 +195,21 @@ private:
         
         while(accept(token::procsym)){
             
+			string fname = lex.Identifier();
             expect(token::identifier);
             
-            string fname = lex.Identifier();
             SymbolTable* parameters = new SymbolTable();
             
-            
+			name = lex.Identifier();
             if(accept(token::identifier)){
                 
                 //TODO se i parametri sono array??
-                parameters->append(new Symbol(lex.Identifier(), standard_types[BaseType::INT]));
+                parameters->append(new Symbol(name, standard_types[BaseType::INT]));
                 
                 while(accept(token::comma)){
+					name = lex.Identifier();
                     expect(token::identifier);
-                    parameters->append(new Symbol(lex.Identifier(), standard_types[BaseType::INT]));
+                    parameters->append(new Symbol(name, standard_types[BaseType::INT]));
                 }
             }
                 
@@ -220,8 +222,8 @@ private:
             defs->append(new FunctionDef(local_vars->find(fname), parameters, fbody));
         }
         
-        IRNode *stat = statement(new SymbolTable(symtab, local_vars)); //TODO concatena local_var con symtab??
-	return new Block(symtab, local_vars, stat, defs);
+        IRNode *stat = statement(new SymbolTable(symtab, local_vars));
+		return new Block(symtab, local_vars, stat, defs);
     }
     
     IRNode* statement(SymbolTable* symtab){
@@ -230,20 +232,21 @@ private:
             
             case token::identifier : 
             {
-                cout << "accepting " << token::identifier << " == " << CurTok << endl;
+                cout << "accepting id" << token::identifier << " == " << CurTok << endl;
+				name = lex.Identifier();
                 getNextToken();
                 
                 if(accept(token::lsquare)){
                     //TODO review expr_left, could be dangerous
                     IRNode* expr_left = expression(symtab);
-                    Symbol* target = symtab->find(lex.Identifier());
+                    Symbol* target = symtab->find(name);
                     expect(token::rsquare);
                     expect(token::becomes);
                     IRNode* expr_right = expression(symtab);
                     return new AssignArrayStat(target, expr_right, expr_left, symtab);
                 }
                 
-                Symbol* target = symtab->find(lex.Identifier());
+                Symbol* target = symtab->find(name);
 				expect(token::becomes);
                 IRNode* expr = expression(symtab);
 				return new AssignStat(target, expr, symtab);
@@ -255,23 +258,26 @@ private:
                 int tok = token::callsym;
                 cout << "accepting call" << token::callsym << " == " << CurTok << endl;
                 getNextToken();
+				string fname = lex.Identifier();
                 expect(token::identifier);
 
                 vector<IRNode*>* parameters = new vector<IRNode*>(); 
                     
                 do{
+					name = lex.Identifier();
+					value = lex.Value();
                     if (accept(token::identifier)) {
-                        parameters->push_back(new Var(symtab->find(lex.Identifier()), symtab));
+                        parameters->push_back(new Var(symtab->find(name), symtab));
 
                     }else if (accept(token::number)) {
 
-                        parameters->push_back(new Const(lex.Value(), symtab));
+                        parameters->push_back(new Const(value, symtab));
                     }
 
                 }while(accept(token::comma));
 
                 
-		return new CallStat(new CallExpr(symtab->find(lex.Identifier()), tok, parameters, symtab), symtab);
+				return new CallStat(new CallExpr(symtab->find(fname), tok, parameters, symtab), symtab);
                 break;
             }
                 
@@ -283,9 +289,9 @@ private:
                 do{
                  statement_list->append(statement(symtab));   
                 }while (accept(token::semicolon));
-		expect(token::endsym);
-		statement_list->printContent();
-		return statement_list;
+				expect(token::endsym);
+				statement_list->printContent();
+				return statement_list;
                 break;
             }    
             case token::ifsym :
@@ -293,15 +299,15 @@ private:
                 cout << "accepting " << token::ifsym << " == " << CurTok << endl;
                 getNextToken();
                 IRNode* cond = condition(symtab);
-		expect(token::thensym);
-		IRNode* then = statement(symtab);
-		return new IfStat(cond, then, symtab);
+				expect(token::thensym);
+				IRNode* then = statement(symtab);
+				return new IfStat(cond, then, symtab);
                 break;
             }
                 
             case token::whilesym :
             {
-                cout << "accepting" << " while " << token::whilesym << " == " << CurTok << endl;
+                cout << "accepting while " << token::whilesym << " == " << CurTok << endl;
                 getNextToken();
                 IRNode *cond = condition(symtab);
 				expect(token::dosym);
@@ -313,8 +319,9 @@ private:
             {
                 cout << "accepting " << token::print << " == " << CurTok << endl;
                 getNextToken();
+				name = lex.Identifier();
                 expect(token::identifier);
-                return new PrintStat(symtab->find(lex.Identifier()), symtab);
+                return new PrintStat(symtab->find(name), symtab);
                 break;
             }    
             default :
@@ -373,20 +380,21 @@ private:
     }
     
     IRNode* factor(SymbolTable *symtab){
+		name = lex.Identifier();
+		value = lex.Value();
         if (accept(token::identifier)) {
 
 			if(accept(token::lsquare)){
                     //TODO review expr_left, could be dangerous
                     IRNode* index = expression(symtab);
-                    Symbol* target = symtab->find(lex.Identifier());
                     expect(token::rsquare);
-                    return new ArrayVar(symtab->find(lex.Identifier()), index, symtab);
+                    return new ArrayVar(symtab->find(name), index, symtab);
             }
 
-            return new Var(symtab->find(lex.Identifier()), symtab);
+            return new Var(symtab->find(name), symtab);
         
         } else if (accept(token::number)) {
-            return new Const(lex.Value(), symtab);
+            return new Const(value, symtab);
             
         } else if (accept(token::lparen)) {
             IRNode *expr = expression(symtab);

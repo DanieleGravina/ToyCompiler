@@ -30,7 +30,7 @@ int main(int argc, char **argv){
 		exit(1);
 	}*/
     
-    const char* s_punt = "VAR x , squ; "
+    const char* s_punt = "VAR x , squ, a; "
     " ARRAY y[10]; "
     " PROCEDURE square x ; "          
     " BEGIN "
@@ -39,7 +39,6 @@ int main(int argc, char **argv){
 
     " BEGIN "
     " x := 1; "
-    " y[x]:=1;"
 	" a := y[1]; "
     " WHILE x <= 10 DO "
     "  BEGIN "

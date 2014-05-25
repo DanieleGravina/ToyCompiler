@@ -49,7 +49,11 @@ public :
 
     size_t getSize() const{
         return size;
-    }       
+    }  
+
+	const string& getName(){
+		return name;
+	}
     
 private:
     string name;
@@ -104,6 +108,10 @@ public:
     const Value& getValue() const{
         return value;
     }
+
+	Type& getType() const{
+		return *stype;
+	}
 
 	void setValue(Value val){
         value = val;
@@ -169,8 +177,10 @@ public:
     Symbol* find(std::string symbol_name){
         if (table.find(symbol_name) != table.end())
             return table[symbol_name];
-        else
+        else{
+			cout << "Error: symbol " << symbol_name << " not found" << endl;
             return NULL;
+		}
     }
     
     void exclude(){
@@ -283,8 +293,8 @@ public:
     /**
     * return uses, if not implemented return NULL
     */
-    virtual std::list<Symbol*>* get_uses(){
-        return NULL;
+    virtual std::list<Symbol*>& get_uses(){
+        return uses;
     }
     
     void repr(int space = 0){
@@ -346,7 +356,7 @@ public:
         flatten();
     }
     
-    void getStatLists(list<IRNode*>* statlists){
+    void getStatLists(list<IRNode*>& statlists){
         
         if(hasChildren()){
             
@@ -356,7 +366,7 @@ public:
         }
         
         if(NodeType() == "StatList" )
-            statlists->push_back(this);
+            statlists.push_back(this);
     }
     
     void replace(IRNode* old_node, IRNode* new_node){
@@ -394,6 +404,7 @@ private:
     vector<IRNode*>* children;
     vector<IRNode*> delete_list;
     SymbolTable* symtab;
+	std::list<Symbol*> uses;
     
 };
 
@@ -403,15 +414,11 @@ public:
         
     }
 
-	virtual std::list<Symbol*>* get_uses(){
+	virtual std::list<Symbol*>& get_uses(){
+		if(!IRNode::get_uses().size())
+			IRNode::get_uses().push_back(symbol);
 
-		std::list<Symbol*>* l = NULL;
-
-		l = new list<Symbol*>();
-
-		l->push_back(symbol);
-
-		return l;
+		return IRNode::get_uses();
     }
     
     virtual const string& NodeType(){
@@ -433,6 +440,10 @@ public:
         
         return s;
     }
+
+	Value& getValue(){
+		return value;
+	}
 private:
     Value value;
 };
@@ -448,22 +459,16 @@ class ArrayVar : public IRNode{
         setChildren(children);
     }
 
-	virtual std::list<Symbol*>* get_uses(){
+	virtual std::list<Symbol*>& get_uses(){
 
-		std::list<Symbol*>* l = NULL;
-
-		if(hasChildren()){
-			l = new list<Symbol*>();
+		if(hasChildren()  && !IRNode::get_uses().size()){
 
 			for(vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i){
-				if(getChildren()->at(i)->get_uses() != NULL){
-					l->merge( *(getChildren()->at(i)->get_uses()) );
-					delete (getChildren()->at(i)->get_uses());
-				}
+				IRNode::get_uses().merge( (getChildren()->at(i)->get_uses()) );
 			}
 		}
 
-		return l;
+		return IRNode::get_uses();
     }
     
     virtual const string& NodeType(){
@@ -503,22 +508,16 @@ public:
         return getChildren()->at(0);
     }
 
-	virtual std::list<Symbol*>* get_uses(){
+	virtual std::list<Symbol*>& get_uses(){
 
-		std::list<Symbol*>* l = NULL;
-
-		if(hasChildren()){
-			l = new list<Symbol*>();
+		if(hasChildren() && !IRNode::get_uses().size()){
 
 			for(vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i){
-				if(getChildren()->at(i)->get_uses() != NULL){
-					l->merge( *(getChildren()->at(i)->get_uses()) );
-					delete (getChildren()->at(i)->get_uses());
-				}
+				IRNode::get_uses().merge( (getChildren()->at(i)->get_uses()) );
 			}
 		}
 
-		return l;
+		return IRNode::get_uses();
     }
     
     virtual const string& NodeType(){
@@ -640,12 +639,6 @@ public:
             delete label;
     }
     
-    virtual std::list<Symbol*>* get_uses(){
-
-	return new std::list<Symbol*>();
-		
-    }
-    
     
     virtual const string& NodeType(){
         static string s = "Stat";
@@ -687,10 +680,10 @@ public:
             setChildren(children);
         } 
 
-    virtual std::list<Symbol*>* get_uses(){
-        std::list<Symbol*>* temp = new std::list<Symbol*>();
-        temp->push_back(sym);
-        return temp;
+    virtual std::list<Symbol*>& get_uses(){
+		if(!IRNode::get_uses().size())
+			IRNode::get_uses().push_back(sym);
+		return IRNode::get_uses();
     }    
 
 	virtual Symbol* getSymbol(){
@@ -719,22 +712,16 @@ public:
             
         } 
 
-	virtual std::list<Symbol*>* get_uses(){
+	virtual std::list<Symbol*>& get_uses(){
 
-		std::list<Symbol*>* l = NULL;
-
-		if(hasChildren()){
-			l = new list<Symbol*>();
+		if(hasChildren() && !IRNode::get_uses().size()){
 
 			for(vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i){
-				if(getChildren()->at(i)->get_uses() != NULL){
-					l->merge( *(getChildren()->at(i)->get_uses()) );
-					delete (getChildren()->at(i)->get_uses());
-				}
+				IRNode::get_uses().merge( (getChildren()->at(i)->get_uses()) );
 			}
 		}
 
-		return l;
+		return IRNode::get_uses();
     }
     
     virtual const string& NodeType(){
@@ -742,6 +729,18 @@ public:
         
         return s;
     }
+
+	virtual Symbol* getSymbol(){
+		return exit;
+	}
+
+	bool isUnconditional(){
+		if(getChildren()->at(0)->NodeType() == "Const"){
+			return true;
+		}
+
+		return false;
+	}
     
 private:
     
@@ -944,12 +943,31 @@ public:
        
        setChildren(children);
     }
+
+	virtual std::list<Symbol*>& get_uses(){
+
+		if(!IRNode::get_uses().size()){
+
+			IRNode::get_uses().merge(getChildren()->at(0)->get_uses());
+
+			for(SymbolTable::iterator it = getSymTab()->begin(); it != getSymTab()->end(); ++it){
+				if(it->second->getType().getName() != "Function" && it->second->getType().getName() != "Label")
+					IRNode::get_uses().push_back(it->second);
+			}
+		}
+
+
+
+		return IRNode::get_uses();
+    }
             
     virtual const string& NodeType(){
         static string s = "CallStat";
         
         return s;
     }
+
+
     
 private:
     CallExpr* call;
@@ -1087,6 +1105,12 @@ public:
     {
         
     }
+
+	virtual std::list<Symbol*>& get_uses(){
+		if(!IRNode::get_uses().size())
+			IRNode::get_uses().push_back(sym);
+		return IRNode::get_uses();
+    } 
         
     virtual const string& NodeType(){
         static string s = "Print";
@@ -1150,14 +1174,20 @@ public :
          
          setChildren(children);
     }
+
+	~Block(){
+		delete lc_sym;
+	}
     
     virtual const string& NodeType(){
         static string s = "Block";
         
         return s;
     }
-  
-    
+
+	SymbolTable& getGlobalSymbolTable(){
+		return *gl_sym;
+	}
 
 private:
     IRNode* body;
@@ -1175,11 +1205,27 @@ public :
             body->setParent(this);
             
             vector<IRNode*>* children = new vector<IRNode*>();
-            children->push_back(_body);
+            children->push_back(body);
        
             setChildren(children);
         
     }
+
+	std::list<Symbol*>& getGlobalSymbol(){
+
+		if(!global_symbol.size()){
+
+			Block *b = static_cast<Block*>(body);
+			SymbolTable& symt = b->getGlobalSymbolTable();
+
+			for(SymbolTable::iterator it = symt.begin(); it != symt.end(); ++it){
+					if(it->second->getType().getName() != "Function" && it->second->getType().getName() != "Label")
+						global_symbol.push_back(it->second);
+			}
+		}
+
+		return global_symbol;
+	}
         
     ~FunctionDef(){
         delete parameters;
@@ -1191,9 +1237,6 @@ public :
         
         return s;
     }
-        
-       
-        
     
     const SymbolTable* getParameters() const{
         return parameters;
@@ -1202,6 +1245,7 @@ public :
 private:
     const SymbolTable* parameters;
     IRNode* body;
+	std::list<Symbol*> global_symbol;
     
 };
 
