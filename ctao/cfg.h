@@ -58,6 +58,15 @@ public:
 				total_var_used = gen.size();
 
 	}
+                
+        ~BasicBlock(){
+            if(next){
+                next->~BasicBlock();
+                delete next;
+            }
+            delete stats;
+            delete labels;
+        }
 
 	bool liveness_iteration(){
 		int lin = live_in.size();
@@ -104,6 +113,14 @@ public:
 	std::set<Symbol*>& getLiveIn(){
 		return live_in;
 	}
+        
+        std::set<Symbol*>& getKill(){
+            return kill;
+        }
+        
+        std::set<Symbol*>& getGen(){
+            return gen;
+        }
 
 	void repr(){
 
@@ -117,14 +134,7 @@ public:
 
 	}
     
-    ~BasicBlock(){
-        if(next){
-            next->~BasicBlock();
-            delete next;
-        }
-        delete stats;
-        delete labels;
-    }
+    
     
     /**
      * Return next block, null if not exits
@@ -170,21 +180,21 @@ public:
 	int getId() const{
 		return myId;
 	}
-    
-private:
-
-	void Union(std::set<Symbol*>& lhs, std::set<Symbol*>& rhs){
+        
+        static void Union(std::set<Symbol*>& lhs, std::set<Symbol*>& rhs){
 		for(std::set<Symbol*>::iterator it = rhs.begin(); it != rhs.end(); ++it){
 			lhs.insert(*it);
 		}
 	}
 
-	void Difference(std::set<Symbol*>& lhs, std::set<Symbol*>& rhs){
+	static void Difference(std::set<Symbol*>& lhs, std::set<Symbol*>& rhs){
 		for(std::set<Symbol*>::iterator it = rhs.begin(); it != rhs.end(); ++it){
 			lhs.erase(*it);
 		}
 	}
-
+    
+private:
+    
 	int myId;
     BasicBlock* next;
     BasicBlock* bb_target;
@@ -373,6 +383,16 @@ public:
 
 		cout << "Error cfg, label "<< label->getName() << " not found" << endl;
 	}
+        
+        typedef std::list<BasicBlock*>::iterator iterator;
+        
+        iterator begin(){
+            return cfg.begin();
+        }
+        
+        iterator end(){
+            return cfg.end();
+        }
 
 private:
 	std::list<BasicBlock*> cfg;
