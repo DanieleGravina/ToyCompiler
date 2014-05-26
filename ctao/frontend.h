@@ -132,7 +132,6 @@ private:
             
             expect(token::eql);
             expect(token::number);
-			cout << "const " << name << endl;
 			local_vars->append(new Symbol(name, standard_types[BaseType::INT], lex.Value()));
             
 	    while ( accept(token::comma) ) {
@@ -140,7 +139,6 @@ private:
 				name = lex.Identifier(); 
 				expect(token::eql);
 				expect(token::number);
-				cout << "const " << name << endl;
 				local_vars->append(new Symbol(name, standard_types[BaseType::INT], lex.Value()));
             }
             
@@ -152,13 +150,11 @@ private:
 			string name = lex.Identifier();   
             expect(token::identifier);
 
-            cout << "var " << name << endl;
             local_vars->append(new Symbol(name, standard_types[BaseType::INT]));
 
             while (accept(token::comma)){
 					name = lex.Identifier();
                     expect(token::identifier);
-					cout << "var " << name << endl;
                     local_vars->append(new Symbol(name, standard_types[BaseType::INT]));
             }
             expect(token::semicolon); 
@@ -187,7 +183,7 @@ private:
 					value = lex.Value(); 
                     expect(token::number);
                     expect(token::rsquare);
-                    local_vars->append(new Symbol(lex.Identifier(), new ArrayType("array", value, BaseType::INT)));
+                    local_vars->append(new Symbol(name, new ArrayType("array", value, BaseType::INT)));
             }
             expect(token::semicolon); 
            
@@ -232,7 +228,7 @@ private:
             
             case token::identifier : 
             {
-                cout << "accepting id" << token::identifier << " == " << CurTok << endl;
+                cout << "accepting identifier" << token::identifier << " == " << CurTok << endl;
 				name = lex.Identifier();
                 getNextToken();
                 
@@ -283,7 +279,7 @@ private:
                 
             case token::beginsym :
             {
-                cout << "accepting " << token::beginsym << " == " << CurTok << endl;
+                cout << "accepting begin" << token::beginsym << " == " << CurTok << endl;
                 getNextToken();
                 StatList* statement_list = new StatList(symtab);
                 do{
@@ -317,7 +313,7 @@ private:
             }    
             case token::print :
             {
-                cout << "accepting " << token::print << " == " << CurTok << endl;
+                cout << "accepting print" << token::print << " == " << CurTok << endl;
                 getNextToken();
 				name = lex.Identifier();
                 expect(token::identifier);
@@ -371,7 +367,7 @@ private:
             getNextToken();
             IRNode* expr2 = factor(symtab);
             vector<IRNode*>* children = new vector<IRNode*>();
-            children->push_back(new Tok(op, symtab));
+            children->push_back(new Tok(op, symtab)); //TODO review the name Tok
             children->push_back(expr);
             children->push_back(expr2);
             expr = new BinExpr(op, children, symtab);
