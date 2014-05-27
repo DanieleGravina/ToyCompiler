@@ -243,11 +243,16 @@ public:
     }
         
     virtual ~IRNode(){
+
+		for(vector<IRNode*>::iterator it = children->begin() ; it != children->end(); ++it){
+			delete *it;
+		}
+
         delete children;
         delete parent;
         
         for(vector<IRNode*>::iterator it = delete_list.begin() ; it != delete_list.end(); ++it)
-                delete *it;
+			delete *it;
         
     }
     
@@ -610,7 +615,7 @@ public:
         label->setTarget(this);
     }
     
-    Symbol* getLabel() const{
+    virtual Symbol* getLabel() {
         return label;
     }
     
@@ -794,12 +799,8 @@ public:
                 it++;
             }
             
-            getParent()->replace(this, getChildren()->at(0));
-            
             it++;
             it2++;
-            
-            cout << endl;
 
             for(; it2 != getChildren()->end(); ++it, ++it2){
                 childrenParent->insert(it, *it2);
@@ -807,9 +808,9 @@ public:
                 while(*it != *it2){
                     it++;
                 }
-
-                cout << endl;
             }
+
+			getParent()->replace(this, getChildren()->at(0));
             
             
             static_cast<StatList*>(getParent())->printContent();
@@ -849,6 +850,18 @@ public:
        children->push_back(expr);
        
        setChildren(children);
+    }
+
+	virtual std::list<Symbol*>& get_uses(){
+
+		if(hasChildren() && !IRNode::get_uses().size()){
+
+			for(vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i){
+				IRNode::get_uses().merge( (getChildren()->at(i)->get_uses()) );
+			}
+		}
+
+		return IRNode::get_uses();
     }
 
 	virtual Symbol* getSymbol(){
@@ -1140,10 +1153,13 @@ private:
 
 class DefinitionList : public IRNode{
 public: 
-    DefinitionList():list(){}
     
     void append(Definition* elem){
-        list.push_back(elem);
+        elem->setParent(this);
+        
+        cout << "Append stat " << elem->Id() << " to " << Id() << endl;
+        
+        addChildren(elem);
     }   
     
     virtual const string& NodeType(){
@@ -1152,10 +1168,6 @@ public:
         return s;
     }
     
-    
-private:
-
-    std::list<IRNode*> list;
 };
 
 class Block : public Stat{
@@ -1233,7 +1245,7 @@ public :
     }
     
     virtual const string& NodeType(){
-        static string s = "FuncDef";
+        static string s = "FunctionDef";
         
         return s;
     }

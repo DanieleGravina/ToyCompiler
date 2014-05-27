@@ -51,11 +51,12 @@ public:
 
 				}
 
-				for(set<Symbol*>::iterator it = kill.begin(); it != kill.end(); ++it){
-						gen.insert(*it);
-				}
+				set<Symbol*> temp;
 
-				total_var_used = gen.size();
+				Union(temp, gen);
+				Union(temp, kill);
+
+				total_var_used = temp.size();
 
 	}
                 
@@ -72,15 +73,15 @@ public:
 		int lin = live_in.size();
 		int lout = live_out.size();
 
-		if(next){
+		if(next != NULL){
 			Union(getLiveOut(), next->getLiveIn());		
 		}
 
-		if(bb_target){
+		if(bb_target != NULL){
 			Union(getLiveOut(), bb_target->getLiveIn());		
 		}
 
-		if(!next && !bb_target){
+		if(next == NULL && bb_target == NULL){
 			if(getFunction()){ //not global
 				std::list<Symbol*>& global = static_cast<FunctionDef*>(getFunction())->getGlobalSymbol();
 				for(std::list<Symbol*>::iterator it = global.begin(); it != global.end(); ++it){
@@ -94,9 +95,9 @@ public:
 
 		Difference(temp, kill);
 
-		Union(gen, temp);
+		Union(temp, gen);
 
-		live_in = gen;
+		live_in = temp;
 
 		return (lin == live_in.size() && lout == live_out.size());
 
@@ -230,12 +231,14 @@ std::list<BasicBlock*>* IRtoBB(IRNode* l){
                 lBB->push_back(bb);
                 labels = new std::list<Symbol*>();
             }
+
             labels->push_back(label);
         }
         
         stats->push_back(*it);
         
         if((*it)->NodeType() == "Branch" || (*it)->NodeType() == "CallStat"){
+
             if(stats->size()){ //start new bb
 				bb = new BasicBlock(stats, labels);
 				stats = new std::list<IRNode*>();
@@ -248,9 +251,9 @@ std::list<BasicBlock*>* IRtoBB(IRNode* l){
     }
     
     if(stats->size() || labels->size()){
-        lBB->push_back(bb);
         bb = new BasicBlock(stats, labels);
-        lBB->back()->setNext(bb);
+		if(lBB->size())
+			lBB->back()->setNext(bb);
         lBB->push_back(bb);
     }
     
@@ -269,23 +272,29 @@ public:
         root->getStatLists(statlists);
         
         for(list<IRNode*>::iterator it = statlists.begin(); it != statlists.end(); ++it){
+
+			cout << "Statlist : " << (*it)->Id() << "to BBs" << endl;
+
 			std::list<BasicBlock*> *temp = IRtoBB(*it);
 			
 			for(list<BasicBlock*>::iterator it2 = temp->begin(); it2 != temp->end(); ++it2){
 				cfg.push_back(*it2);
-
-				(*it2)->repr();
-
-				if((*it2)->getTarget() != NULL){
-					Symbol *label = static_cast<Stat*>((*it2)->getTarget())->getLabel();
-					(*it2)->setBBTarget(find_target_bb(label));
-				}
-
-				(*it2)->remove_useless_next();
 			}
 
 			delete temp;
         }
+
+		for(list<BasicBlock*>::iterator it2 = cfg.begin(); it2 != cfg.end(); ++it2){
+
+			(*it2)->repr();
+
+			if((*it2)->getTarget() != NULL){
+				Symbol *label = static_cast<BranchStat*>((*it2)->getTarget())->getSymbol();
+				(*it2)->setBBTarget(find_target_bb(label));
+			}
+
+			(*it2)->remove_useless_next();
+		}
         
 	}
 
@@ -376,12 +385,13 @@ public:
 			std::list<Symbol*>& labels = (*it)->getLabels();
 			for(list<Symbol*>::iterator it2 = labels.begin(); it2 != labels.end(); ++it2){
 				if(*it2 == label){
+
 					return *it;
 				}
 			}
 		}
-
-		cout << "Error cfg, label "<< label->getName() << " not found" << endl;
+		if(label)
+			cout << "Error cfg, label "<< label->getName() << " not found" << endl;
 	}
         
         typedef std::list<BasicBlock*>::iterator iterator;

@@ -262,6 +262,7 @@ private:
                 do{
 					name = lex.Identifier();
 					value = lex.Value();
+					//TODO if argument is an expression?
                     if (accept(token::identifier)) {
                         parameters->push_back(new Var(symtab->find(name), symtab));
 
