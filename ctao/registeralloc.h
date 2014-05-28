@@ -82,7 +82,7 @@ public:
         
     }
     
-    register_alloc(){
+    void register_alloc(){
         toSpill();
         
         if(!to_spill.size()){
@@ -114,6 +114,12 @@ private:
                 to_spill.push_back(*it);
         }
     }
+
+	void usedRegs(){
+		for(vector<Symbol*>::iterator it = vars.begin(); it != vars.end(); ++it){
+
+		}
+	}
     
     CFG &cfg;
     unsigned int nregs;
@@ -122,6 +128,7 @@ private:
     std::list<Symbol*> var_stack;
     std::list<BasicBlock*> to_spill;
     std::vector<Symbol*> vars;
+	std::set<Symbol*> used_regs;
 };
 
 

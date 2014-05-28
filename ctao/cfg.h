@@ -24,8 +24,8 @@ public:
 
 				std::set<Symbol*> uses;	
 
-				if(static_cast<Stat*>(stats->back())->getLabel())
-					target = static_cast<IRNode*>(static_cast<Stat*>(stats->back())->getLabel()->getTarget());
+				if(stats->back()->NodeType() == "Branch")
+					target = static_cast<IRNode*>(static_cast<BranchStat*>(stats->back())->getSymbol()->getTarget());
 
 				kill.clear(); //assigned
 				gen.clear();  // use before assign
@@ -91,7 +91,9 @@ public:
 			}
 		}
 
-		std::set<Symbol*> temp(live_out);
+		std::set<Symbol*> temp;
+
+		Union(temp, live_out);
 
 		Difference(temp, kill);
 
@@ -289,7 +291,7 @@ public:
 			(*it2)->repr();
 
 			if((*it2)->getTarget() != NULL){
-				Symbol *label = static_cast<BranchStat*>((*it2)->getTarget())->getSymbol();
+				Symbol *label = static_cast<Stat*>((*it2)->getTarget())->getLabel();
 				(*it2)->setBBTarget(find_target_bb(label));
 			}
 

@@ -615,9 +615,13 @@ public:
         label->setTarget(this);
     }
     
-    virtual Symbol* getLabel() {
+    Symbol* getLabel() {
         return label;
     }
+
+	virtual Symbol* getSymbol(){
+		return NULL;
+	}
     
     /**
     *return null if global
@@ -634,10 +638,6 @@ public:
             return NULL; 
         }
     }
-
-	virtual Symbol* getSymbol(){
-		return NULL;
-	}
     
     virtual ~Stat(){
         if(label)
