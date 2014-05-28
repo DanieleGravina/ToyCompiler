@@ -96,6 +96,8 @@ class Symbol{
 public:
     
     Symbol():  value(0){}
+
+	Symbol(string _name) : name(_name), value(0){}
     
     Symbol(string _name, Type* _stype, Value _value = NULL)
         : name(_name), stype(_stype), value(_value) {
@@ -126,7 +128,8 @@ public:
 	}
     
     ~Symbol(){
-        delete stype;
+		if(stype)
+			delete stype;
     }
     
     

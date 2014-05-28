@@ -17,6 +17,7 @@
 #include "lexer.h"
 #include "ir.h"
 #include "cfg.h"
+#include "registeralloc.h"
 
 using namespace std;
 
@@ -65,6 +66,10 @@ public:
 		cfg.liveness();
 
 		cfg.print_liveness();
+
+		RegisterAlloc regalloc(cfg, 8);
+		regalloc.register_alloc();
+		regalloc.res();
 
 		
     }
