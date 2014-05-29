@@ -4,9 +4,11 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
+      <itemPath>cfg.h</itemPath>
       <itemPath>frontend.h</itemPath>
       <itemPath>ir.h</itemPath>
       <itemPath>lexer.h</itemPath>
+      <itemPath>registeralloc.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -40,6 +42,8 @@
       </toolsSet>
       <compileType>
       </compileType>
+      <item path="cfg.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="frontend.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="ir.h" ex="false" tool="3" flavor2="0">
@@ -49,6 +53,8 @@
       <item path="lexer.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="registeralloc.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="1">
@@ -71,6 +77,8 @@
           <developmentMode>5</developmentMode>
         </asmTool>
       </compileType>
+      <item path="cfg.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="frontend.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="ir.h" ex="false" tool="3" flavor2="0">
@@ -80,6 +88,8 @@
       <item path="lexer.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="registeralloc.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>

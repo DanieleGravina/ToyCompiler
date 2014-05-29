@@ -63,13 +63,15 @@ public:
         
         CFG cfg(static_cast<IRNode*>(root));
 
-		cfg.liveness();
+        cfg.liveness();
 
-		cfg.print_liveness();
+        cfg.print_liveness();
+        
+        cfg.lowering();
 
-		RegisterAlloc regalloc(cfg, 8);
-		regalloc.register_alloc();
-		regalloc.res();
+        //RegisterAlloc regalloc(cfg, 3);
+        //regalloc.register_alloc();
+        //regalloc.res();
 
 		
     }
@@ -279,7 +281,7 @@ private:
                 }while(accept(token::comma));
 
                 
-				return new CallStat(new CallExpr(symtab->find(fname), tok, parameters, symtab), symtab);
+			return new CallStat(new CallExpr(symtab->find(fname), tok, parameters, symtab), symtab);
                 break;
             }
                 

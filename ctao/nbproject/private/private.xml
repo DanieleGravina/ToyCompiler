@@ -10,7 +10,9 @@
             <file>file:/home/daniele/NetBeansProjects/ToyCompiler/ctao/frontend.h</file>
             <file>file:/home/daniele/NetBeansProjects/ToyCompiler/ctao/lexer.h</file>
             <file>file:/home/daniele/NetBeansProjects/ToyCompiler/ctao/main.cpp</file>
+            <file>file:/home/daniele/NetBeansProjects/ToyCompiler/ctao/cfg.h</file>
             <file>file:/home/daniele/NetBeansProjects/ToyCompiler/ctao/lexer.cpp</file>
+            <file>file:/home/daniele/NetBeansProjects/ToyCompiler/ctao/registeralloc.h</file>
             <file>file:/home/daniele/NetBeansProjects/ToyCompiler/ctao/ir.h</file>
         </group>
     </open-files>

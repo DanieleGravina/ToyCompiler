@@ -195,6 +195,40 @@ public:
 			lhs.erase(*it);
 		}
 	}
+        
+        void replaceStat(IRNode* old_node, IRNode* new_node){
+        
+            cout << "Replace in  " << old_node->Id() << "with " << new_node->Id() << endl;
+
+            for(std::list<IRNode*>::iterator it = stats->begin(); it != stats->end(); ++it){
+                if(*it == old_node){
+                    stats->insert(new_node);
+                    stats->insert(stats->remove(*it), new_node);
+                    delete old_node;
+                }
+            }
+        
+        
+        }
+        
+        void lower(){
+            std::list<IRNode*> stack;
+            
+            for(std::list<IRNode*>::iterator it = stats->begin(); it != stats->end(); ++it){
+                (*it)->lower_expr(&stack);
+                for(std::list<IRNode*>::reverse_iterator it2 = stack.rbegin(); it2 != stack.rend(); ++it2){
+                    (*it2)->repr();
+                    stats->insert(*it, *it2);
+                }
+                
+                
+                stack.clear();
+            }
+        }
+        
+        void spill(Symbol* to_spill){
+            
+        }
     
 private:
     
@@ -349,6 +383,12 @@ public:
 		}
 
 	}
+        
+        void lowering(){
+            for(list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it){
+                (*it)->lower();
+            }
+        }
 
 	void print_liveness(){
 
