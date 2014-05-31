@@ -12,7 +12,6 @@
 #include<map>
 #include<set>
 #include "cfg.h"
-#include "ir.h"
 
 class RegisterAlloc{
 public:
