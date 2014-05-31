@@ -27,42 +27,17 @@ public:
         delete stats;
         delete labels;
     }
-
-    bool liveness_iteration() {
-        int lin = live_in.size();
-        int lout = live_out.size();
-
-        if (next != NULL) {
-            Union(getLiveOut(), next->getLiveIn());
-        }
-
-        if (bb_target != NULL) {
-            Union(getLiveOut(), bb_target->getLiveIn());
-        }
-
-        if (next == NULL && bb_target == NULL) {
-            if (getFunction()) { //not global
-                std::list<Symbol*>& global = static_cast<FunctionDef*> (getFunction())->getGlobalSymbol();
-                for (std::list<Symbol*>::iterator it = global.begin(); it != global.end(); ++it) {
-                    live_out.insert(*it);
-                }
-
-            }
-        }
-
-        std::set<Symbol*> temp;
-
-        Union(temp, live_out);
-
-        Difference(temp, kill);
-
-        Union(temp, gen);
-
-        live_in = temp;
-
-        return (lin == live_in.size() && lout == live_out.size());
-
-    }
+    
+    /**
+     * Initialize gen and kill
+     */
+    void init();
+    
+    /**
+     * Perform one liveness iteration
+     * @return true if completed, else false
+     */
+    bool liveness_iteration();
 
     IRNode* getFunction() {
         return static_cast<Stat*> (stats->front())->getFunction();
@@ -153,9 +128,7 @@ public:
         }
     }
 
-    void spill(Symbol* to_spill) {
-
-    }
+    void spill(Symbol* to_spill);
 
 private:
 
@@ -183,39 +156,8 @@ std::list<BasicBlock*>* IRtoBB(IRNode* l);
 class CFG {
 public:
 
-    CFG(IRNode* root) {
-
-        list<IRNode*> statlists;
-
-        root->getStatLists(statlists);
-
-        for (list<IRNode*>::iterator it = statlists.begin(); it != statlists.end(); ++it) {
-
-            cout << "Statlist : " << (*it)->Id() << "to BBs" << endl;
-
-            std::list<BasicBlock*> *temp = IRtoBB(*it);
-
-            for (list<BasicBlock*>::iterator it2 = temp->begin(); it2 != temp->end(); ++it2) {
-                cfg.push_back(*it2);
-            }
-
-            delete temp;
-        }
-
-        for (list<BasicBlock*>::iterator it2 = cfg.begin(); it2 != cfg.end(); ++it2) {
-
-            (*it2)->repr();
-
-            if ((*it2)->getTarget() != NULL) {
-                Symbol *label = static_cast<Stat*> ((*it2)->getTarget())->getLabel();
-                (*it2)->setBBTarget(find_target_bb(label));
-            }
-
-            (*it2)->remove_useless_next();
-        }
-
-    }
-
+    CFG(IRNode* root);
+    
     std::map<int, BasicBlock*>* heads() {
 
         std::list<BasicBlock*> defs;
@@ -311,6 +253,8 @@ public:
         if (label)
             cout << "Error cfg, label " << label->getName() << " not found" << endl;
     }
+    
+    void spill(Symbol* sym);
 
     typedef std::list<BasicBlock*>::iterator iterator;
 

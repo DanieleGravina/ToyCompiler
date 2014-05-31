@@ -322,6 +322,14 @@ public:
         return uses;
     }
 
+    virtual void replace_uses(Symbol *sym) {
+        if (hasChildren()) {
+            for (vector<IRNode*>::size_type i = 0; i < children->size(); ++i) {
+                (children->at(i))->replace_uses(sym);
+            }
+        }
+    }
+
     void repr(int space = 0);
 
     virtual void lower() {
@@ -373,7 +381,7 @@ public:
      * @param new_node
      */
     void replace(IRNode* old_node, IRNode* new_node);
-    
+
     /**
      * Replace without elimination
      * @param old_node
@@ -416,6 +424,10 @@ public:
             IRNode::get_uses().push_back(symbol);
 
         return IRNode::get_uses();
+    }
+    
+    virtual void replace_uses(Symbol *sym) {
+        symbol = sym;
     }
 
     virtual const string& NodeType() {
@@ -501,8 +513,8 @@ private:
 class Expr : public IRNode {
 public:
 
-    Expr(int _op, SymbolTable* symtab) :
-    IRNode(NULL, NULL, symtab), op(_op, symtab) {
+    Expr(int _op, SymbolTable* symtab)
+    : IRNode(NULL, NULL, symtab), op(_op, symtab) {
     }
 
     IRNode* getOperator() const {
@@ -619,6 +631,10 @@ public:
         return sym;
     }
 
+    void setSymbol(Symbol* _sym) {
+        sym = sym;
+    }
+
     virtual const string& NodeType() {
         static string s = "AssignStat";
 
@@ -659,7 +675,7 @@ public:
     }
 
     virtual void lower_expr(std::list<IRNode*>* stack);
-    
+
     void lowerBinExpr(std::list<IRNode*>* stack);
 
 };
@@ -687,7 +703,7 @@ public:
     }
 
     virtual void lower_expr(std::list<IRNode*>* stack);
-    
+
     void lowerUnExpr(std::list<IRNode*>* stack);
 
 };
@@ -719,13 +735,13 @@ private:
 class LoadStat : public Stat {
 public:
 
-    LoadStat(IRNode* _expr, SymbolTable* symtab) :
+    LoadStat(Symbol* _sym, IRNode* _expr, SymbolTable* symtab) :
     Stat(symtab) {
         _expr->setParent(this);
         vector<IRNode*>* children = new vector<IRNode*>();
         children->push_back(_expr);
         setChildren(children);
-
+        sym = _sym;
     }
 
     virtual const string& NodeType() {
@@ -743,6 +759,9 @@ public:
             }
         }
     }
+    
+private:
+    Symbol* sym;
 };
 
 class StoreStat : public Stat {
@@ -958,7 +977,7 @@ public:
 
         Var* array = new Var(sym, getSymTab());
 
-        LoadStat* mem = new LoadStat(array, getSymTab());
+        LoadStat* mem = new LoadStat(sym, array, getSymTab());
 
         vector<IRNode*>* child2 = new vector<IRNode*>();
         child2->push_back(mul);

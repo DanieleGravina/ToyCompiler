@@ -65,11 +65,21 @@ public:
 
         cfg.print_liveness();
         
-        //RegisterAlloc regalloc(cfg, 3);
-        //regalloc.register_alloc();
-        //regalloc.res();
+        RegisterAlloc *regalloc = new RegisterAlloc(cfg, 8);
+        
+        while(!regalloc->TryAlloc()){
+            
+            regalloc->res();
+            
+            cfg.spill(regalloc->SymToSpill());
+            cfg.liveness();
+            delete regalloc;
+            regalloc = new RegisterAlloc(cfg, 3);
+        }
+        
+        regalloc->res();
 
-		
+        delete regalloc;
     }
     
     
