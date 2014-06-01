@@ -39,7 +39,7 @@ void BasicBlock::init() {
             gen.insert(*it4);
         }
 
-        if ((*it)->NodeType() == "AssignStat" || (*it)->NodeType() == "StoreStat") {
+        if ((*it)->NodeType() == "AssignStat" || (*it)->NodeType() == "Load") {
             kill.insert(static_cast<Stat*> (*it)->getSymbol());
         }
 
@@ -105,24 +105,30 @@ void BasicBlock::spill(Symbol* to_spill) {
 
                 (*it)->getSymTab()->append(temp);
 
-                stats->insert(it, store);
+				if(it == stats->end())
+					stats->push_back(store);
+				else
+					stats->insert(++it, store);
+
                 it = stats->begin(); //restart from first stat
+				continue;
             }
         }
 
 
-
         for (list<Symbol*>::iterator it2 = (*it)->get_uses().begin(); it2 != (*it)->get_uses().end(); ++it2) {
-            if ((*it2) == to_spill) {
+			if ((*it2) == to_spill && (*it)->NodeType() != "CallStat") {
                 Symbol* temp = new Symbol(Symbol::genUniqueId());
-                IRNode* load = new LoadStat(to_spill, new Var(temp, (*it)->getSymTab()), (*it)->getSymTab());
+                IRNode* load = new LoadStat(temp, new Var(to_spill, (*it)->getSymTab()), (*it)->getSymTab());
 
-                (*it)->replace_uses(temp);
+				stats->insert(it, load);
+
+                (*it)->replace_uses(to_spill, temp);
 
                 (*it)->getSymTab()->append(temp);
 
-                stats->insert(--it, load);
                 it = stats->begin(); //restart from first stat
+				break;
             }
         }
 

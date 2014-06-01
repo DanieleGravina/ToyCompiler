@@ -65,7 +65,7 @@ public:
 
         cfg.print_liveness();
         
-        RegisterAlloc *regalloc = new RegisterAlloc(cfg, 8);
+        RegisterAlloc *regalloc = new RegisterAlloc(cfg, 4);
         
         while(!regalloc->TryAlloc()){
             
@@ -73,8 +73,9 @@ public:
             
             cfg.spill(regalloc->SymToSpill());
             cfg.liveness();
+			cfg.print_liveness();
             delete regalloc;
-            regalloc = new RegisterAlloc(cfg, 3);
+            regalloc = new RegisterAlloc(cfg, 4);
         }
         
         regalloc->res();
@@ -132,9 +133,14 @@ private:
             
     }
     
-    Block* block(SymbolTable* symtab){
+	Block* block(SymbolTable* symtab, SymbolTable* parameters = NULL){
      
         SymbolTable* local_vars = new SymbolTable();
+
+		if(parameters){
+			for(SymbolTable::iterator it = parameters->begin(); it != parameters->end(); ++it)
+				local_vars->append(it->second);
+		}
         
         DefinitionList* defs = new DefinitionList();
         
@@ -213,12 +219,14 @@ private:
             if(accept(token::identifier)){
                 
                 //TODO se i parametri sono array??
-                parameters->append(new Symbol(name, standard_types[BaseType::INT]));
+				Symbol *temp = new Symbol(name, standard_types[BaseType::INT]);
+                parameters->append(temp);
                 
                 while(accept(token::comma)){
 					name = lex.Identifier();
                     expect(token::identifier);
-                    parameters->append(new Symbol(name, standard_types[BaseType::INT]));
+                    temp = new Symbol(name, standard_types[BaseType::INT]);
+					parameters->append(temp);
                 }
             }
                 
@@ -226,7 +234,7 @@ private:
             local_vars->append(new Symbol(fname, standard_types[BaseType::FUNCTION]));
             
            
-            Block *fbody = block(new SymbolTable(local_vars, parameters)); //bisgna passargli i parametri come var locali
+			Block *fbody = block(local_vars, parameters);
             expect(token::semicolon);
             defs->append(new FunctionDef(local_vars->find(fname), parameters, fbody));
         }

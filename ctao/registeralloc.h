@@ -11,7 +11,51 @@
 
 #include<map>
 #include<set>
+#include<list>
 #include "cfg.h"
+
+#include <iostream>
+#include <list>
+using namespace std;
+ 
+// A class that represents an undirected graph
+class Graph
+{
+    typedef map<Symbol*, set<Symbol*>*> graph; 
+	typedef list<Symbol*> stack;
+	graph adj;
+	stack st;
+
+
+public:
+    // Constructor and destructor
+	Graph(set<Symbol*> &syms){
+
+		for(set<Symbol*>::iterator it =  syms.begin(); it != syms.end(); ++it){
+			adj[*it] = new set<Symbol*>();
+		}
+	}
+
+    ~Graph(){
+		for(graph::iterator it =  adj.begin(); it != adj.end(); ++it){
+			delete it->second;
+		} 
+	}
+ 
+    // function to add an edge to graph
+    void addEdge(Symbol* v, Symbol* w);
+
+	// return true if simplified graph is empty
+	void simplify(unsigned int neighbours);
+
+	Symbol* getNotInterfering(Symbol* var);
+
+	stack& getStack(){
+		return st;
+	}
+ 
+};
+
 
 class RegisterAlloc {
 public:
@@ -33,6 +77,8 @@ public:
 
 
 private:
+
+	//bool select();
 
     void toSpill() {
         for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
@@ -80,7 +126,7 @@ private:
         std::set<Symbol*>* not_interfering = new std::set<Symbol*>();
 
         for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
-            BasicBlock::Union(the_vars, *accessed_vars[*it]);
+            //BasicBlock::Union(the_vars, *accessed_vars[*it]);
             BasicBlock::Union(the_vars, *crossed_vars[*it]);
             if (the_vars.find(var) != the_vars.end()) {
                 BasicBlock::Union(interfering, the_vars);
@@ -89,13 +135,28 @@ private:
             the_vars.clear();
         }
 
-        *not_interfering = used_regs;
+        *not_interfering = all_regs;
         BasicBlock::Difference(*not_interfering, interfering);
 
         return not_interfering;
     }
 
-    Symbol* next_free_reg() {
+	Symbol* next_free_reg() {
+		std::set<Symbol*> avaible_reg = all_regs;
+		Symbol *reg;
+		for(map<Symbol*,Symbol*>::iterator it = vars.begin(); it != vars.end(); ++it){
+			if(it->second)
+				avaible_reg.erase(it->second);
+		}
+
+		if(avaible_reg.size()){
+			return *avaible_reg.begin();
+		}
+
+		return NULL;
+	}
+
+    Symbol* get_reg() {
 
         string name;
 
@@ -124,8 +185,10 @@ private:
     std::map<Symbol*, Symbol*> vars;
     std::set<Symbol*> used_regs;
     std::set<Symbol*> all_vars;
+	std::set<Symbol*> all_regs;
     unsigned int counter_regs;
     Symbol* sym_to_spill;
+	//Graph graph;
 };
 
 
