@@ -373,6 +373,7 @@ private:
             expr = new UnExpr(op, expr, symtab);
         
         while (CurTok == token::plus || CurTok == token::minus) {
+			op = CurTok;
             getNextToken();
             IRNode* expr2 = term(symtab);
             vector<IRNode*>* children = new vector<IRNode*>();
@@ -437,13 +438,14 @@ private:
             if (CurTok == token::eql || CurTok == token::neq || 
                     CurTok == token::lss || CurTok == token::leq || 
                     CurTok == token::gtr || CurTok == token::geq) {
+				int op = CurTok;
                 getNextToken();
                 IRNode* expr2 = expression(symtab);
                 vector<IRNode*>* children = new vector<IRNode*>();
-                children->push_back(new Tok(CurTok, symtab));
+                children->push_back(new Tok(op, symtab));
                 children->push_back(expr);
                 children->push_back(expr2);
-                return new BinExpr(CurTok, children, symtab);
+                return new BinExpr(op, children, symtab);
             } else {
                 error("condition: invalid operator");
                 getNextToken();

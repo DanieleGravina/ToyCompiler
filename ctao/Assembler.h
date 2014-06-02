@@ -25,13 +25,15 @@ class CodeGenerator{
 public:
 	CodeGenerator(CFG& _cfg, RegisterAlloc& _regalloc): cfg(_cfg), regalloc(_regalloc){
 
-		FunctionCode* current = new FunctionCode();
+		Symbol* cursym = new Symbol("global");
+		FunctionCode* current = new FunctionCode(cursym);
 
 		functions.push_front(current);
 
 		for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
 
-			if((*it)->getSymOfFunction()){
+			if((*it)->getSymOfFunction() && (*it)->getSymOfFunction() != cursym){
+				cursym = (*it)->getSymOfFunction();
 				current = new FunctionCode((*it)->getSymOfFunction());
 				functions.push_front(current);
 			}
@@ -47,12 +49,36 @@ public:
 				if((*it2)->NodeType() == "Branch"){
 					genBranch(*it2, current);
 				}
+
+				if((*it2)->NodeType() == "CallStat"){
+					genCall(*it2, current);
+				}
+
+				if((*it2)->NodeType() == "Load"){
+					genLoad(*it2, current);
+				}
+
+				if((*it2)->NodeType() == "StoreStat"){
+					genStore(*it2, current);
+				}
 			}
 
 		}
 	}
 
 private:
+
+	void genStore(IRNode* stat, FunctionCode* current){
+		cout << "store" << endl;
+	}
+
+	void genLoad(IRNode* stat, FunctionCode* current){
+		cout << "load" << endl;
+	}
+
+	void genCall(IRNode* stat, FunctionCode* current){
+		cout << "BL square" << endl;
+	}
 
 	void genCmp(IRNode* stat, FunctionCode* current){
 
@@ -93,7 +119,7 @@ private:
 			IRNode* oper = static_cast<Expr*>(branch->getChildren()->at(0))->getOperator();
 
 			switch(static_cast<Tok*>(oper)->getOP()){
-
+           
 			case token::leq :
 				op = "BLE";
 				break;
@@ -114,8 +140,8 @@ private:
 				break;
 			}
 
-			cout << op + label << endl;
-			current->insertCode(op + label);
+			cout << op + " " + label << endl;
+			current->insertCode(op + " " + label );
 
 		}
 
