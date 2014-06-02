@@ -16,6 +16,7 @@
 #include<vector>
 #include "lexer.h"
 #include "registeralloc.h"
+#include "Assembler.h"
 
 using namespace std;
 
@@ -65,7 +66,7 @@ public:
 
         cfg.print_liveness();
         
-        RegisterAlloc *regalloc = new RegisterAlloc(cfg, 4);
+        RegisterAlloc *regalloc = new RegisterAlloc(cfg, 3);
         
         while(!regalloc->TryAlloc()){
             
@@ -75,10 +76,13 @@ public:
             cfg.liveness();
 			cfg.print_liveness();
             delete regalloc;
-            regalloc = new RegisterAlloc(cfg, 4);
+            regalloc = new RegisterAlloc(cfg, 3);
         }
         
         regalloc->res();
+
+		CodeGenerator codgen(cfg, *regalloc);
+
 
         delete regalloc;
     }

@@ -95,13 +95,15 @@ RegisterAlloc::RegisterAlloc(CFG& _cfg, unsigned int _nregs)
 			BasicBlock::Union(temp, (*it)->getGen());
 			BasicBlock::Union(temp, (*it)->getKill());
 
+			//BasicBlock::Union(temp, (*it)->getLiveIn());
+
 			*accessed = temp;
 			accessed_vars[*it] = accessed;
 
 			BasicBlock::Union(temp2, (*it)->getLiveIn());
 			BasicBlock::Union(temp2, (*it)->getLiveOut());
 
-			//BasicBlock::Difference(temp2, temp);
+			BasicBlock::Difference(temp2, temp);
 
 			*crossed = temp2;
 
@@ -109,6 +111,11 @@ RegisterAlloc::RegisterAlloc(CFG& _cfg, unsigned int _nregs)
 
 			BasicBlock::Union(all_vars, *accessed);
 			BasicBlock::Union(all_vars, *crossed);
+			//BasicBlock::Union(all_vars, (*it)->getGen());
+			//BasicBlock::Union(all_vars, (*it)->getKill());
+
+			temp.clear();
+			temp2.clear();
 
 		}
 

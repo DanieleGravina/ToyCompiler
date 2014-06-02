@@ -70,6 +70,10 @@ public:
                 std::cout << it->first->getName() << " : " << it->second->getName() << std::endl;
         }
     }
+
+	map<Symbol*, Symbol*>& mapVarReg(){
+		return vars;
+	}
     
     Symbol* SymToSpill(){
         return sym_to_spill;
@@ -98,22 +102,15 @@ private:
 
         for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
 
-            for (set<Symbol*>::iterator it2 = accessed_vars[*it]->begin(); it2 != accessed_vars[*it]->end(); ++it2) {
-                if (var == *it2) {
-                    accessed_vars[*it]->erase(var);
-                    accessed_vars[*it]->insert(reg);
-                    break;
-                }
+			if(accessed_vars[*it]->find(var) != accessed_vars[*it]->end()){
+				accessed_vars[*it]->erase(var);
+                accessed_vars[*it]->insert(reg);
+			}
 
-            }
-
-            for (set<Symbol*>::iterator it2 = crossed_vars[*it]->begin(); it2 != crossed_vars[*it]->end(); ++it2) {
-                if (var == *it2) {
-                    crossed_vars[*it]->erase(var);
-                    crossed_vars[*it]->insert(reg);
-                    break;
-                }
-            }
+			if(crossed_vars[*it]->find(var) != crossed_vars[*it]->end()){
+				crossed_vars[*it]->erase(var);
+                crossed_vars[*it]->insert(reg);
+			}
 
         }
 
@@ -129,6 +126,15 @@ private:
             //BasicBlock::Union(the_vars, *accessed_vars[*it]);
             BasicBlock::Union(the_vars, *crossed_vars[*it]);
             if (the_vars.find(var) != the_vars.end()) {
+				the_vars.erase(var);
+                BasicBlock::Union(interfering, the_vars);
+            }
+
+            the_vars.clear();
+
+			BasicBlock::Union(the_vars, *accessed_vars[*it]);
+            if (the_vars.find(var) != the_vars.end()) {
+				the_vars.erase(var);
                 BasicBlock::Union(interfering, the_vars);
             }
 
@@ -162,7 +168,7 @@ private:
 
         ostringstream convert;
 
-        convert << "Reg" << (nregs - counter_regs);
+        convert << "R" << (nregs - counter_regs);
 
         name = convert.str();
 

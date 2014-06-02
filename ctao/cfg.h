@@ -130,6 +130,10 @@ public:
 
     void spill(Symbol* to_spill);
 
+	Symbol* getSymOfFunction(){
+		return function_sym;
+	}
+
 private:
 
     int myId;
@@ -142,7 +146,10 @@ private:
     std::set<Symbol*> live_out;
     std::set<Symbol*> kill;
     std::set<Symbol*> gen;
+	std::set<Symbol*> spilled;
     int total_var_used;
+
+	Symbol* function_sym;
 
 };
 
@@ -222,6 +229,18 @@ public:
             }
 
             (*it)->repr();
+
+			cout << "gen : ";
+            for (std::set<Symbol*>::iterator it2 = (*it)->getGen().begin(); it2 != (*it)->getGen().end(); ++it2) {
+                cout << (*it2)->getName() << " ";
+            }
+            cout << endl;
+
+			cout << "kill : ";
+            for (std::set<Symbol*>::iterator it2 = (*it)->getKill().begin(); it2 != (*it)->getKill().end(); ++it2) {
+                cout << (*it2)->getName() << " ";
+            }
+            cout << endl;
 
             cout << "live_in : ";
             for (std::set<Symbol*>::iterator it2 = (*it)->getLiveIn().begin(); it2 != (*it)->getLiveIn().end(); ++it2) {

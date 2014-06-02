@@ -83,6 +83,10 @@ public:
     Value(int val) : int_value(val) {
     }
 
+	int getValue(){
+		return int_value;
+	}
+
 private:
 
     int int_value;
@@ -92,14 +96,14 @@ private:
 class Symbol {
 public:
 
-    Symbol() : value(0) {
+    Symbol() : value(0), spilled(false) {
     }
 
-    Symbol(string _name) : name(_name), value(0) {
+    Symbol(string _name) : name(_name), value(0), spilled(false) {
     }
 
     Symbol(string _name, Type* _stype, Value _value = NULL)
-    : name(_name), stype(_stype), value(_value) {
+    : name(_name), stype(_stype), value(_value), spilled(false) {
     }
 
     const string& getName() const {
@@ -126,6 +130,14 @@ public:
         return target;
     }
 
+	void spill(){
+		spilled = true;
+	}
+
+	bool isSpilled(){
+		return spilled;
+	}
+
     ~Symbol() {
         if (stype)
             delete stype;
@@ -148,6 +160,7 @@ public:
     }
 
 private:
+	bool spilled;
     const string name;
     Type* stype;
     Value value;
@@ -527,6 +540,10 @@ public:
 
     Tok(int _tok, SymbolTable* symtab) : tok(_tok), IRNode(NULL, NULL, symtab) {
     }
+
+	int getOP(){
+		return tok;
+	}
 
     virtual const string& NodeType() {
         static string s = "Tok";
@@ -1273,6 +1290,10 @@ public:
 
         return s;
     }
+
+	virtual Symbol* getSymbol(){
+		return symbol; 
+	}
 
 private:
     Symbol* symbol;

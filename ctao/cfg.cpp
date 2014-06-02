@@ -5,7 +5,8 @@
  */
 
 BasicBlock::BasicBlock(std::list<IRNode*>* _stats = NULL, list<Symbol*>* _labels = NULL)
-: stats(_stats), labels(_labels), target(NULL), next(NULL), bb_target(NULL), total_var_used(0) {
+: stats(_stats), labels(_labels), target(NULL), next(NULL), bb_target(NULL), total_var_used(0),
+function_sym(NULL){
 
     myId = ++Id;
     
@@ -45,6 +46,9 @@ void BasicBlock::init() {
 
     }
 
+	Difference(gen, spilled);
+	Difference(kill, spilled);
+
     set<Symbol*> temp;
 
     Union(temp, gen);
@@ -68,11 +72,12 @@ bool BasicBlock::liveness_iteration() {
 
     if (next == NULL && bb_target == NULL) {
         if (getFunction()) { //not global
+			function_sym = static_cast<FunctionDef*> (getFunction())->getSymbol();
             std::list<Symbol*>& global = static_cast<FunctionDef*> (getFunction())->getGlobalSymbol();
             for (std::list<Symbol*>::iterator it = global.begin(); it != global.end(); ++it) {
                 live_out.insert(*it);
             }
-
+			Difference(live_out, spilled);
         }
     }
 
@@ -132,6 +137,9 @@ void BasicBlock::spill(Symbol* to_spill) {
             }
         }
 
+		to_spill->spill();
+
+		spilled.insert(to_spill);
 
 
     }
