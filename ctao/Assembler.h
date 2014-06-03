@@ -47,23 +47,27 @@ public:
 				Symbol* label = static_cast<Stat*> (*it2)->getLabel();
 
 				if((*it2)->NodeType() == "AssignStat"){
-					genAssign(*it2, current);
+					genAssign(*it2, current, label);
 				}
 
 				if((*it2)->NodeType() == "Branch"){
-					genBranch(*it2, current);
+					genBranch(*it2, current, label);
 				}
 
 				if((*it2)->NodeType() == "CallStat"){
-					genCall(*it2, current);
+					genCall(*it2, current, label);
 				}
 
 				if((*it2)->NodeType() == "Load"){
-					genLoad(*it2, current);
+					genLoad(*it2, current, label);
 				}
 
 				if((*it2)->NodeType() == "StoreStat"){
-					genStore(*it2, current);
+					genStore(*it2, current, label);
+				}
+
+				if((*it2)->NodeType() == "Stat"){
+					genEmpty(*it2, current, label);
 				}
 			}
 
@@ -78,11 +82,29 @@ public:
 
 private:
 
-	void genStore(IRNode* stat, FunctionCode* current){
+	void genEmpty(IRNode* stat, FunctionCode* current, Symbol* label){
+		string label_name;
+
+		if(label){
+			label_name = label->getName() + ": ";
+		}
+
+		cout << label_name + "NOP" << endl;
+
+		current->insertCode(label_name + "NOP" );
+	}
+
+	void genStore(IRNode* stat, FunctionCode* current, Symbol* label){
 		
 		string r1;
 		string r2;
 		string r3;
+
+		string label_name;
+
+		if(label){
+			label_name = label->getName() + ": ";
+		}
 
 		StoreStat* store = static_cast<StoreStat*>(stat);
 
@@ -101,16 +123,22 @@ private:
 			r3 = "#0";
 		}
 		
-		cout << "STORE " + r1 + " " + r2 + " " + r3 << endl; 
+		cout <<label_name + "STORE " + r1 + " " + r2 + " " + r3 << endl; 
 
-		current->insertCode("LOAD " + r1 + " " + r2 + " " + r3);
+		current->insertCode(label_name + "STORE " + r1 + " " + r2 + " " + r3);
 	}
 
-	void genLoad(IRNode* stat, FunctionCode* current){
+	void genLoad(IRNode* stat, FunctionCode* current, Symbol* label){
 
 		string r1;
 		string r2;
 		string r3;
+
+		string label_name;
+
+		if(label){
+			label_name = label->getName() + ": ";
+		}
 
 		LoadStat* load = static_cast<LoadStat*>(stat);
 
@@ -126,7 +154,7 @@ private:
 		
 		cout << "LOAD " + r1 + " " + r2 + " " + r3 << endl; 
 
-		current->insertCode("LOAD " + r1 + " " + r2 + " " + r3);
+		current->insertCode(label_name + "LOAD " + r1 + " " + r2 + " " + r3);
 	}
 
 	void genPush(IRNode* stat, FunctionCode* current){
@@ -135,7 +163,14 @@ private:
 	void genPop(IRNode* stat, FunctionCode* current){
 	}
 
-	void genCall(IRNode* stat, FunctionCode* current){
+	void genCall(IRNode* stat, FunctionCode* current, Symbol* label){
+
+		string label_name;
+
+		if(label){
+			label_name = label->getName() + ": ";
+		}
+
 		string op = "BL";
 		string call_name;
 
@@ -160,7 +195,7 @@ private:
 				convert << i;
 
 				if(!i){
-					push = "PUSH { R" + convert.str();
+					push = label_name +  "PUSH { R" + convert.str();
 				}
 				else{
 					push += ", R" + convert.str();
@@ -185,6 +220,9 @@ private:
 			cout << push << endl;
 
 			current->insertCode(push);
+		}
+		else{
+			call_name = label_name + call_name;
 		}
 
 		for(vector<string>::iterator it = movs.begin(); it != movs.end(); ++it){
@@ -222,13 +260,15 @@ private:
 		}
 	}
 
-	void genCmp(IRNode* stat, FunctionCode* current){
+	void genCmp(IRNode* stat, FunctionCode* current, Symbol* label){
+
+		string label_name;
+
+		if(label){
+			label_name = label->getName() + ": ";
+		}
 
 		BranchStat* branch = static_cast<BranchStat*>(stat);
-
-		Symbol* label_sym = branch->getLabel();
-
-		string label = label_sym->getName();
 
 		string op = "CMP";
 
@@ -236,12 +276,12 @@ private:
 
 		string r2 = TermCode(branch->getChildren()->at(0)->getChildren()->at(2));
 
-		cout << label + " : " + op + " " + r1 + " " + r2 << endl;
+		cout << label_name + op + " " + r1 + " " + r2 << endl;
 
-		current->insertCode(label + " : " + op + " " + r1 + " " + r2 );
+		current->insertCode(label_name + op + " " + r1 + " " + r2 );
 	}
 
-	void genBranch(IRNode* stat, FunctionCode* current){
+	void genBranch(IRNode* stat, FunctionCode* current, Symbol* label_stat){
 
 		string op;
 
@@ -256,7 +296,7 @@ private:
 			current->insertCode("B " + label);
 		}
 		else{
-			genCmp(branch, current);
+			genCmp(branch, current, label_stat);
 
 			IRNode* oper = static_cast<Expr*>(branch->getChildren()->at(0))->getOperator();
 
@@ -289,12 +329,18 @@ private:
 
 	}
 
-	void genAssign(IRNode* stat, FunctionCode* current){
+	void genAssign(IRNode* stat, FunctionCode* current, Symbol* label){
 
 		string op;
 		string r1;
 		string r2;
 		string r3;
+
+		string label_name;
+
+		if(label){
+			label_name = label->getName() + ": ";
+		}
 
 		IRNode* expr = expr = stat->getChildren()->at(0);
 
@@ -328,13 +374,13 @@ private:
 			if(expr->NodeType() == "BinExpr"){
 				r3 = TermCode(expr->getChildren()->at(2));
 
-				cout << op + " " + r1 + " " + r2 + " " + r3 << endl;
+				cout << label_name + op + " " + r1 + " " + r2 + " " + r3 << endl;
 
-				current->insertCode(op + " " + r1 + " " + r2 + " " + r3); 
+				current->insertCode(label_name + op + " " + r1 + " " + r2 + " " + r3); 
 			}else{
-				cout << op + " " + r1 + " " + r2 << endl;
+				cout << label_name + op + " " + r1 + " " + r2 << endl;
 
-				current->insertCode(op + " " + r1 + " " + r2); 
+				current->insertCode(label_name + op + " " + r1 + " " + r2); 
 			}
 
 
@@ -346,9 +392,9 @@ private:
 
 			r2 = TermCode(expr);
 
-			cout << op + " " + r1 + " " + r2 << endl;
+			cout << label_name + op + " " + r1 + " " + r2 << endl;
 
-			current->insertCode(op + " " + r1 + " " + r2);
+			current->insertCode(label_name + op + " " + r1 + " " + r2);
 		}
 
 	}
