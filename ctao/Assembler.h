@@ -3,6 +3,8 @@
 
 #include "registeralloc.h"
 
+#define MAX_NUM_ARGUMENTS 4
+
 
 class FunctionCode{
 public:
@@ -42,6 +44,8 @@ public:
 
 			for(list<IRNode*>::iterator it2 = stats.begin(); it2 != stats.end(); ++it2){
 
+				Symbol* label = static_cast<Stat*> (*it2)->getLabel();
+
 				if((*it2)->NodeType() == "AssignStat"){
 					genAssign(*it2, current);
 				}
@@ -66,18 +70,156 @@ public:
 		}
 	}
 
+	~CodeGenerator(){
+		for(std::list<FunctionCode*>::iterator it = functions.begin(); it != functions.end(); ++it){
+			delete *it;
+		}
+	}
+
 private:
 
 	void genStore(IRNode* stat, FunctionCode* current){
-		cout << "store" << endl;
+		
+		string r1;
+		string r2;
+		string r3;
+
+		StoreStat* store = static_cast<StoreStat*>(stat);
+
+		Symbol* reg = store->getSymbol();
+
+		if(!reg->isSpilled()){
+			reg = regalloc.mapVarReg()[store->getSymbol()];
+		}
+
+		r1 = reg->getName();
+
+		if(store->getChildren()->at(0)->NodeType() == "BinExpr"){
+		}
+		else{
+			r2 = TermCode(store->getChildren()->at(0));
+			r3 = "#0";
+		}
+		
+		cout << "STORE " + r1 + " " + r2 + " " + r3 << endl; 
+
+		current->insertCode("LOAD " + r1 + " " + r2 + " " + r3);
 	}
 
 	void genLoad(IRNode* stat, FunctionCode* current){
-		cout << "load" << endl;
+
+		string r1;
+		string r2;
+		string r3;
+
+		LoadStat* load = static_cast<LoadStat*>(stat);
+
+		Symbol* reg = regalloc.mapVarReg()[load->getSymbol()];
+		r1 = reg->getName();
+
+		if(load->getChildren()->at(0)->NodeType() == "BinExpr"){
+		}
+		else{
+			r2 = TermCode(load->getChildren()->at(0));
+			r3 = "#0";
+		}
+		
+		cout << "LOAD " + r1 + " " + r2 + " " + r3 << endl; 
+
+		current->insertCode("LOAD " + r1 + " " + r2 + " " + r3);
+	}
+
+	void genPush(IRNode* stat, FunctionCode* current){
+	}
+
+	void genPop(IRNode* stat, FunctionCode* current){
 	}
 
 	void genCall(IRNode* stat, FunctionCode* current){
-		cout << "BL square" << endl;
+		string op = "BL";
+		string call_name;
+
+		CallStat* call = static_cast<CallStat*>(stat);
+
+		CallExpr* call_expr = static_cast<CallExpr*>(call->getChildren()->at(0));
+
+		Symbol* call_sym = call_expr->getSymbol();
+
+		call_name = call_sym->getName();
+
+		string push;
+		string pop;
+		vector<string> movs;
+
+		for(std::list<IRNode*>::size_type i = 0; i < call_expr->getChildren()->size(); ++i){
+			if(i < MAX_NUM_ARGUMENTS){
+				IRNode* argument = call_expr->getChildren()->at(i);
+				ostringstream convert;
+				string mov;
+
+				convert << i;
+
+				if(!i){
+					push = "PUSH { R" + convert.str();
+				}
+				else{
+					push += ", R" + convert.str();
+				}
+
+				mov = "MOV R"+ convert.str();
+				mov += " ";
+				mov += TermCode(argument);
+
+				movs.push_back(mov);
+
+				mov.clear();
+			}
+
+			else 
+				cout << "more than 4 arguments" << endl;
+		}
+
+		if(push.size()){
+			push += " }";
+
+			cout << push << endl;
+
+			current->insertCode(push);
+		}
+
+		for(vector<string>::iterator it = movs.begin(); it != movs.end(); ++it){
+			cout << *it << endl;
+			current->insertCode(*it);
+		}
+
+		cout << op + " " + call_name << endl;
+
+		current->insertCode(op + " " + call_name);
+
+		for(std::list<IRNode*>::size_type i = 0; i < call_expr->getChildren()->size(); ++i){
+			if(i < MAX_NUM_ARGUMENTS){
+				IRNode* argument = call_expr->getChildren()->at(i);
+				ostringstream convert;
+				string mov;
+
+				convert << i;
+
+				if(!i){
+					pop = "POP { R" + convert.str();
+				}
+				else{
+					pop += ", R" + convert.str();
+				}
+			}
+		}
+
+		if(pop.size()){
+			pop += " }";
+
+			cout << pop << endl;
+
+			current->insertCode(pop);
+		}
 	}
 
 	void genCmp(IRNode* stat, FunctionCode* current){
@@ -222,6 +364,10 @@ private:
 		}
 		else{
 			Symbol* sym = static_cast<Var*>(expr)->getSymbol();
+
+			if(sym->isSpilled())
+				return sym->getName();
+
 			Symbol* reg = regalloc.mapVarReg()[sym];
 			return reg->getName();
 		}

@@ -784,6 +784,10 @@ public:
         return s;
     }
 
+	virtual Symbol* getSymbol(){
+		return function;
+	}
+
 private:
 
     Symbol* function;
