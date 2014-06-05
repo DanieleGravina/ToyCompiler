@@ -45,6 +45,8 @@ public:
         
         Block *root =  block(global_symtab);
         expect(token::period);
+
+		root->setGlobal();
         
         root->repr();
         
@@ -77,6 +79,7 @@ public:
 			cfg.print_liveness();
             delete regalloc;
             regalloc = new RegisterAlloc(cfg, 3);
+
         }
         
         regalloc->res();

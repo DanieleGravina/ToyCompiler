@@ -96,14 +96,14 @@ private:
 class Symbol {
 public:
 
-    Symbol() : value(0), spilled(false) {
+    Symbol() : value(0), spilled(false), global(false) {
     }
 
-    Symbol(string _name) : name(_name), value(0), spilled(false) {
+    Symbol(string _name) : name(_name), value(0), spilled(false), global(false) {
     }
 
     Symbol(string _name, Type* _stype, Value _value = NULL)
-    : name(_name), stype(_stype), value(_value), spilled(false) {
+    : name(_name), stype(_stype), value(_value), spilled(false), global(false) {
     }
 
     const string& getName() const {
@@ -129,6 +129,14 @@ public:
     void* getTarget() {
         return target;
     }
+
+	void setGlobal(){
+		global = true;
+	}
+
+	bool isGlobal(){
+		return global;
+	}
 
 	void spill(){
 		spilled = true;
@@ -161,6 +169,7 @@ public:
 
 private:
 	bool spilled;
+	bool global;
     const string name;
     Type* stype;
     Value value;
@@ -530,6 +539,24 @@ public:
 
         return s;
     }
+
+	virtual void lower(){
+		/*Symbol* index = new Symbol(Symbol::genUniqueId());
+		Symbol* result = new Symbol(Symbol::genUniqueId());
+		getSymTab()->append(index);
+		getSymTab()->append(result);
+
+		std::vector<IRNode*>* children = new std::vector<IRNode*>();
+		children->push_back(new Tok(token::times, getSymTab()));
+		children->push_back(new Var(index, getSymTab()));
+		children->push_back(new Var(index, getSymTab()));
+
+		IRNode* assign = new AssignStat(index, getChildren()->at(0), getSymTab());
+
+		IRNode* mul = new BinExpr(token::times, children , getSymTab());
+
+		IRNode* load = new LoadStat(result, mul, getSymTab());*/
+	}
 
 private:
     Symbol* symbol;
@@ -1352,6 +1379,12 @@ public:
     SymbolTable& getGlobalSymbolTable() {
         return *gl_sym;
     }
+
+	void setGlobal(){
+		for(SymbolTable::iterator it = lc_sym->begin(); it != lc_sym->end(); ++it){
+			it->second->setGlobal();
+		}
+	}
 
 private:
     IRNode* body;

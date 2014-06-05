@@ -8,13 +8,17 @@ void Graph::addEdge(Symbol* v, Symbol* w)
 
 void Graph::simplify(unsigned int neighbours){
 
-	graph copy = adj;
+	graph copy;
+
+	for(graph::iterator it =  adj.begin(); it != adj.end(); ++it){
+		copy[it->first] = new std::set<Symbol*>(*it->second);
+	}
 
 	Symbol* to_spill = NULL;
 
 	unsigned int max = 0;
 
-	while(copy.empty()){
+	while(!copy.empty()){
 
 		for(graph::iterator it =  copy.begin(); it != copy.end(); ++it){
 			if(it->second->size() < neighbours){
@@ -23,11 +27,15 @@ void Graph::simplify(unsigned int neighbours){
 				}
 				st.push_back(it->first);
 				copy.erase(it);
+				if(copy.empty())
+					break;
 				it =  copy.begin();
 			}
 			else{
-				if(it->second->size() > max)
+				if(it->second->size() > max){
 					to_spill = it->first;
+					max = it->second->size();
+				}
 			}
 		} 
 
@@ -44,19 +52,25 @@ void Graph::simplify(unsigned int neighbours){
 			max = 0;
 		}
 	}
+
 }
 
-Symbol* Graph::getNotInterfering(Symbol* var){
+std::set<Symbol*>* Graph::getNotInterfering(Symbol* var){
+
+	std::set<Symbol*>* not_interfering = new std::set<Symbol*>();
+
 	for(graph::iterator it =  adj.begin(); it != adj.end(); ++it){
 		if(it->first != var){
 			if(it->second->find(var) == it->second->end())
-				return it->first;
+				not_interfering->insert(it->first);
 		}
 	}
+
+	return not_interfering;
 }
 
 RegisterAlloc::RegisterAlloc(CFG& _cfg, unsigned int _nregs)
-	: cfg(_cfg), nregs(_nregs), counter_regs(nregs) {
+	: cfg(_cfg), nregs(_nregs), counter_regs(nregs), graph(cfg) {
 
 		std::set<Symbol*>* accessed;
 		std::set<Symbol*>* crossed;
@@ -66,19 +80,71 @@ RegisterAlloc::RegisterAlloc(CFG& _cfg, unsigned int _nregs)
 
 		map<Symbol*, int> var_freq;
 
-
+		
 		/*for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
 
 			BasicBlock::Union(temp, (*it)->getLiveIn());
-			BasicBlock::Union(temp, (*it)->getLiveOut());
+			BasicBlock::Union(temp2, (*it)->getLiveOut());
+
+			for(set<Symbol*>::iterator it = all_vars.begin(); it != all_vars.end(); ++it){
+				if(temp.find(*it) != temp.end()){
+					for (set<Symbol*>::iterator it2 = temp.begin(); it2 != temp.end(); ++it2) {
+						if(*it != *it2)
+							graph.addEdge(*it, *it2);
+					}	
+				}
+
+				if(temp2.find(*it) != temp2.end()){
+					for (set<Symbol*>::iterator it2 = temp2.begin(); it2 != temp2.end(); ++it2) {
+						if(*it != *it2)
+							graph.addEdge(*it, *it2);
+					}	
+				}
+			}
+
+			temp.clear();
+			temp2.clear();
+		}*/
+
+
+		for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
+
+			BasicBlock::Union(temp, (*it)->getKill());
+			BasicBlock::Union(temp2, (*it)->getLiveOut());
 
 			for (set<Symbol*>::iterator it2 = temp.begin(); it2 != temp.end(); ++it2) {
-				for (set<Symbol*>::iterator it3 = temp.begin(); it3 != temp.end(); ++it3) {
+				for (set<Symbol*>::iterator it3 = temp2.begin(); it3 != temp2.end(); ++it3) {
 					if(*it3 != *it2)
 						graph.addEdge(*it2, *it3);
 				}	
 			}
-		}*/
+
+			temp.clear();
+			temp2.clear();
+		}
+
+		set<Symbol*> all_vars;
+
+		for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
+			BasicBlock::Union(all_vars, (*it)->getGen());
+			BasicBlock::Union(all_vars, (*it)->getKill());
+			BasicBlock::Union(all_vars, (*it)->getLiveOut());
+			BasicBlock::Union(all_vars, (*it)->getLiveIn());
+		}
+
+		for(std::set<Symbol*>::iterator it = all_vars.begin(); it != all_vars.end(); ++it){
+			std::set<Symbol*>* not_i = graph.getNotInterfering(*it);
+
+			cout << (*it)->getName() << " not interfere ";
+
+			for(std::set<Symbol*>::iterator it2 = not_i->begin(); it2 != not_i->end(); ++it2){
+				cout << " " << (*it2)->getName() ;
+			}
+
+			cout << endl;
+		}
+
+
 
 		Symbol* reg = get_reg();
 
@@ -156,34 +222,37 @@ RegisterAlloc::RegisterAlloc(CFG& _cfg, unsigned int _nregs)
 }
 
 bool RegisterAlloc::TryAlloc() {
-	toSpill();
+	//toSpill();
 
 	bool result = true;
 
-	//graph.simplify(nregs);
+	graph.simplify(nregs);
+
 	
 	//return select();
 
-	if (to_spill.size()) {
+	/*if (to_spill.size()) {
 		cout << "BB to spill ";
 		for (list<BasicBlock*>::iterator it = to_spill.begin(); it != to_spill.end(); ++it) {
 			cout << (*it)->getId() << " ";
 		}
 
 		cout << endl;
-	}
+	}*/
 
-	Symbol* var = var_stack.back();
+	//Symbol* var = var_stack.back();
+
+	Symbol* var = graph.getStack().front();
 	Symbol* reg = NULL;
 	std::set<Symbol*>* not_interfering;
-	var_stack.pop_back();
+	graph.getStack().pop_front();
 
 	replace(var, next_free_reg());
 
-	while (var_stack.size()) {
-		var = var_stack.back();
+	while (graph.getStack().size()) {
+		var = graph.getStack().front();
 		reg = NULL;
-		var_stack.pop_back();
+		graph.getStack().pop_front();
 
 		if (!vars[var]) {
 			not_interfering = get_not_interfering(var);

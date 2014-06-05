@@ -29,9 +29,18 @@ class Graph
 
 public:
     // Constructor and destructor
-	Graph(set<Symbol*> &syms){
+	Graph(CFG& cfg){
 
-		for(set<Symbol*>::iterator it =  syms.begin(); it != syms.end(); ++it){
+		set<Symbol*> all_vars;
+
+		for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
+			BasicBlock::Union(all_vars, (*it)->getGen());
+			BasicBlock::Union(all_vars, (*it)->getKill());
+			BasicBlock::Union(all_vars, (*it)->getLiveOut());
+			BasicBlock::Union(all_vars, (*it)->getLiveIn());
+		}
+
+		for(std::set<Symbol*>::iterator it = all_vars.begin(); it != all_vars.end(); ++it){
 			adj[*it] = new set<Symbol*>();
 		}
 	}
@@ -48,10 +57,20 @@ public:
 	// return true if simplified graph is empty
 	void simplify(unsigned int neighbours);
 
-	Symbol* getNotInterfering(Symbol* var);
+	std::set<Symbol*>* getNotInterfering(Symbol* var);
+	std::set<Symbol*>& getInterfering(Symbol* var){
+		return *adj[var];
+	}
 
 	stack& getStack(){
 		return st;
+	}
+
+	void toSpill(int nregs){
+		for(graph::iterator it =  adj.begin(); it != adj.end(); ++it){
+			if(it->second->size() > nregs)
+				cout << it->first->getName() << " candidate to spill" << endl; 
+		}
 	}
  
 };
@@ -83,8 +102,8 @@ public:
 private:
 
 	//bool select();
+	void toSpill(){
 
-    void toSpill() {
         for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
             if (accessed_vars[*it]->size() + crossed_vars[*it]->size() > nregs)
                 to_spill.push_back(*it);
@@ -118,12 +137,17 @@ private:
     }
 
     std::set<Symbol*>* get_not_interfering(Symbol* var) {
-        std::set<Symbol*> interfering;
+
+		std::set<Symbol*> the_vars = graph.getInterfering(var);
+		std::set<Symbol*> interfering;
+        std::set<Symbol*>* not_interfering = new std::set<Symbol*>();
+
+        /*std::set<Symbol*> interfering;
         std::set<Symbol*> the_vars;
         std::set<Symbol*>* not_interfering = new std::set<Symbol*>();
 
         for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
-            //BasicBlock::Union(the_vars, *accessed_vars[*it]);
+            BasicBlock::Union(the_vars, *accessed_vars[*it]);
             BasicBlock::Union(the_vars, *crossed_vars[*it]);
             if (the_vars.find(var) != the_vars.end()) {
 				the_vars.erase(var);
@@ -139,7 +163,13 @@ private:
             }
 
             the_vars.clear();
-        }
+        }*/
+
+		for(std::set<Symbol*>::iterator it = the_vars.begin(); it != the_vars.end(); ++it){
+			if(vars[*it] != NULL)
+				interfering.insert(vars[*it]);
+
+		}
 
         *not_interfering = all_regs;
         BasicBlock::Difference(*not_interfering, interfering);
@@ -194,7 +224,7 @@ private:
 	std::set<Symbol*> all_regs;
     unsigned int counter_regs;
     Symbol* sym_to_spill;
-	//Graph graph;
+	Graph graph;
 };
 
 
