@@ -83,9 +83,9 @@ public:
     Value(int val) : int_value(val) {
     }
 
-	int getValue(){
-		return int_value;
-	}
+    int getValue() {
+        return int_value;
+    }
 
 private:
 
@@ -130,21 +130,21 @@ public:
         return target;
     }
 
-	void setGlobal(){
-		global = true;
-	}
+    void setGlobal() {
+        global = true;
+    }
 
-	bool isGlobal(){
-		return global;
-	}
+    bool isGlobal() {
+        return global;
+    }
 
-	void spill(){
-		spilled = true;
-	}
+    void spill() {
+        spilled = true;
+    }
 
-	bool isSpilled(){
-		return spilled;
-	}
+    bool isSpilled() {
+        return spilled;
+    }
 
     ~Symbol() {
         if (stype)
@@ -153,7 +153,7 @@ public:
 
     static string genUniqueId() {
 
-		static int ids = 0;
+        static int ids = 0;
 
         string name; // string which will contain the result
 
@@ -168,8 +168,8 @@ public:
     }
 
 private:
-	bool spilled;
-	bool global;
+    bool spilled;
+    bool global;
     const string name;
     Type* stype;
     Value value;
@@ -347,11 +347,13 @@ public:
             for (vector<IRNode*>::size_type i = 0; i < children->size(); ++i) {
                 (children->at(i))->replace_uses(old, sym);
             }
-			uses.clear();
+            uses.clear();
 
-			for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
-				uses.merge((getChildren()->at(i)->get_uses()));
-			}
+            for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
+                uses.merge((getChildren()->at(i)->get_uses()));
+                if(old->isGlobal())
+                    uses.push_back(getSymTab()->find("zero"));
+            }
         }
     }
 
@@ -450,13 +452,13 @@ public:
 
         return IRNode::get_uses();
     }
-    
+
     virtual void replace_uses(Symbol *old, Symbol* sym) {
-		if(symbol == old){
-			symbol = sym;
-			IRNode::get_uses().clear();
-			IRNode::get_uses().push_back(symbol);
-		}
+        if (symbol == old) {
+            symbol = sym;
+            IRNode::get_uses().clear();
+            IRNode::get_uses().push_back(symbol);
+        }
     }
 
     virtual const string& NodeType() {
@@ -465,9 +467,9 @@ public:
         return s;
     }
 
-	Symbol* getSymbol(){
-		return symbol;
-	}
+    Symbol* getSymbol() {
+        return symbol;
+    }
 
 private:
     Symbol* symbol;
@@ -512,26 +514,26 @@ public:
                 IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
             }
 
-			IRNode::get_uses().push_back(symbol);
+            IRNode::get_uses().push_back(symbol);
 
         }
 
         return IRNode::get_uses();
     }
 
-	 virtual void replace_uses(Symbol *old, Symbol* sym) {
-		if(symbol == old){
-			symbol = sym;
-		}
-		IRNode::get_uses().clear();
+    virtual void replace_uses(Symbol *old, Symbol* sym) {
+        if (symbol == old) {
+            symbol = sym;
+        }
+        IRNode::get_uses().clear();
 
-		if (hasChildren()) 
-			for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
-				getChildren()->at(i)->replace_uses(old, sym);
-				IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
-			}
-		IRNode::get_uses().push_back(symbol);
-		
+        if (hasChildren())
+            for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
+                getChildren()->at(i)->replace_uses(old, sym);
+                IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
+            }
+        IRNode::get_uses().push_back(symbol);
+
     }
 
     virtual const string& NodeType() {
@@ -540,23 +542,23 @@ public:
         return s;
     }
 
-	virtual void lower(){
-		/*Symbol* index = new Symbol(Symbol::genUniqueId());
-		Symbol* result = new Symbol(Symbol::genUniqueId());
-		getSymTab()->append(index);
-		getSymTab()->append(result);
+    virtual void lower() {
+        /*Symbol* index = new Symbol(Symbol::genUniqueId());
+        Symbol* result = new Symbol(Symbol::genUniqueId());
+        getSymTab()->append(index);
+        getSymTab()->append(result);
 
-		std::vector<IRNode*>* children = new std::vector<IRNode*>();
-		children->push_back(new Tok(token::times, getSymTab()));
-		children->push_back(new Var(index, getSymTab()));
-		children->push_back(new Var(index, getSymTab()));
+        std::vector<IRNode*>* children = new std::vector<IRNode*>();
+        children->push_back(new Tok(token::times, getSymTab()));
+        children->push_back(new Var(index, getSymTab()));
+        children->push_back(new Var(index, getSymTab()));
 
-		IRNode* assign = new AssignStat(index, getChildren()->at(0), getSymTab());
+        IRNode* assign = new AssignStat(index, getChildren()->at(0), getSymTab());
 
-		IRNode* mul = new BinExpr(token::times, children , getSymTab());
+        IRNode* mul = new BinExpr(token::times, children , getSymTab());
 
-		IRNode* load = new LoadStat(result, mul, getSymTab());*/
-	}
+        IRNode* load = new LoadStat(result, mul, getSymTab());*/
+    }
 
 private:
     Symbol* symbol;
@@ -568,9 +570,9 @@ public:
     Tok(int _tok, SymbolTable* symtab) : tok(_tok), IRNode(NULL, NULL, symtab) {
     }
 
-	int getOP(){
-		return tok;
-	}
+    int getOP() {
+        return tok;
+    }
 
     virtual const string& NodeType() {
         static string s = "Tok";
@@ -606,14 +608,14 @@ public:
         return IRNode::get_uses();
     }
 
-	virtual void replace_uses(Symbol *old, Symbol *sym) {
+    virtual void replace_uses(Symbol *old, Symbol *sym) {
 
-		IRNode::get_uses().clear();
+        IRNode::get_uses().clear();
 
-		if (hasChildren()) {
+        if (hasChildren()) {
 
             for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
-				getChildren()->at(i)->replace_uses(old, sym);
+                getChildren()->at(i)->replace_uses(old, sym);
                 IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
             }
         }
@@ -811,9 +813,9 @@ public:
         return s;
     }
 
-	virtual Symbol* getSymbol(){
-		return function;
-	}
+    virtual Symbol* getSymbol() {
+        return function;
+    }
 
 private:
 
@@ -850,14 +852,14 @@ public:
         }
     }
 
-	virtual Symbol* getSymbol(){
-		return sym;
-	}
+    virtual Symbol* getSymbol() {
+        return sym;
+    }
 
-	virtual std::list<Symbol*>& get_uses() {
+    virtual std::list<Symbol*>& get_uses() {
         return IRNode::get_uses();
     }
-    
+
 private:
     Symbol* sym;
 };
@@ -875,7 +877,7 @@ public:
 
     virtual std::list<Symbol*>& get_uses() {
         if (!IRNode::get_uses().size())
-			IRNode::get_uses().merge(getChildren()->at(0)->get_uses());
+            IRNode::get_uses().merge(getChildren()->at(0)->get_uses());
         return IRNode::get_uses();
     }
 
@@ -1292,12 +1294,12 @@ public:
         return IRNode::get_uses();
     }
 
-	virtual void replace_uses(Symbol* old, Symbol* _sym) {
-        if(old == sym){
-			sym = _sym;
-			IRNode::get_uses().clear();
-			IRNode::get_uses().push_back(sym);
-		}
+    virtual void replace_uses(Symbol* old, Symbol* _sym) {
+        if (old == sym) {
+            sym = _sym;
+            IRNode::get_uses().clear();
+            IRNode::get_uses().push_back(sym);
+        }
     }
 
     virtual const string& NodeType() {
@@ -1322,9 +1324,9 @@ public:
         return s;
     }
 
-	virtual Symbol* getSymbol(){
-		return symbol; 
-	}
+    virtual Symbol* getSymbol() {
+        return symbol;
+    }
 
 private:
     Symbol* symbol;
@@ -1380,11 +1382,11 @@ public:
         return *gl_sym;
     }
 
-	void setGlobal(){
-		for(SymbolTable::iterator it = lc_sym->begin(); it != lc_sym->end(); ++it){
-			it->second->setGlobal();
-		}
-	}
+    void setGlobal() {
+        for (SymbolTable::iterator it = lc_sym->begin(); it != lc_sym->end(); ++it) {
+            it->second->setGlobal();
+        }
+    }
 
 private:
     IRNode* body;

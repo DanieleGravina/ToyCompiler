@@ -20,247 +20,244 @@
 
 using namespace std;
 
-class frontend{
-    
+class frontend {
 public:
-    
-    frontend(lexer lex):lex(lex){
+
+    frontend(lexer lex) : lex(lex) {
         getNextToken();
-        
+
         standard_types[BaseType::INT] = new Type("INTEGER", 32, BaseType::INT);
         standard_types[BaseType::LABEL] = new LabelType();
         standard_types[BaseType::FUNCTION] = new FunctionType();
     }
-    
-    ~frontend(){
+
+    ~frontend() {
         delete global_symtab;
         //delete bbs;
     }
-    
-    
-    
-    void program(){
-        
+
+    void program() {
+
         global_symtab = new SymbolTable();
-        
-        Block *root =  block(global_symtab);
+
+        Block *root = block(global_symtab);
         expect(token::period);
 
-		root->setGlobal();
-        
+        root->setGlobal();
+
         root->repr();
-        
+
         root->lowering();
-        
+
         cout << "after lowering" << endl;
-        
+
         root->repr();
-        
-        root->flattening();        
-        
+
+        root->flattening();
+
         cout << "after flattening" << endl;
-        
+
         root->repr();
-        
-        CFG cfg(static_cast<IRNode*>(root));
+
+        CFG cfg(static_cast<IRNode*> (root));
 
         cfg.liveness();
 
         cfg.print_liveness();
-        
+
         RegisterAlloc *regalloc = new RegisterAlloc(cfg, 3);
-        
-        while(!regalloc->TryAlloc()){
-            
+
+        while (!regalloc->TryAlloc()) {
+
             regalloc->res();
-            
+
             cfg.spill(regalloc->SymToSpill());
             cfg.liveness();
-			cfg.print_liveness();
+            cfg.print_liveness();
             delete regalloc;
             regalloc = new RegisterAlloc(cfg, 3);
 
         }
-        
+
         regalloc->res();
 
-		CodeGenerator codgen(cfg, *regalloc);
+        CodeGenerator codgen(cfg, *regalloc);
 
 
         delete regalloc;
     }
-    
-    
-    
-    
+
+
+
+
 private:
-    
+
     lexer lex;
-    
+
     int CurTok;
 
-	int value;
+    int value;
 
-	string name;
-    
+    string name;
+
     SymbolTable* global_symtab;
-    
+
     std::list<BasicBlock*>* bbs;
-    
+
     int getNextToken() {
         return CurTok = lex.next();
     }
-    
-    void error(const char s[]){
+
+    void error(const char s[]) {
         cout << s << endl;
     }
-    
-    bool expect(int tok){
-        
+
+    bool expect(int tok) {
+
         cout << "expecting " << tok << endl;
-        
-        if (!accept(tok)){
+
+        if (!accept(tok)) {
             error("unexpected symbol");
             return false;
         }
-        
+
         return true;
     }
-    
-    bool accept(int tok){
-        
+
+    bool accept(int tok) {
+
         cout << "accepting " << tok << " == " << CurTok << endl;
-        
-        if(tok == CurTok){
+
+        if (tok == CurTok) {
             getNextToken();
             return true;
         }
-        
+
         return false;
-            
+
     }
-    
-	Block* block(SymbolTable* symtab, SymbolTable* parameters = NULL){
-     
+
+    Block* block(SymbolTable* symtab, SymbolTable* parameters = NULL) {
+
         SymbolTable* local_vars = new SymbolTable();
 
-		if(parameters){
-			for(SymbolTable::iterator it = parameters->begin(); it != parameters->end(); ++it)
-				local_vars->append(it->second);
-		}
-        
+        if (parameters) {
+            for (SymbolTable::iterator it = parameters->begin(); it != parameters->end(); ++it)
+                local_vars->append(it->second);
+        }
+
         DefinitionList* defs = new DefinitionList();
-        
-        if(accept(token::constsym)){
-            
-			name = lex.Identifier();
+
+        if (accept(token::constsym)) {
+
+            name = lex.Identifier();
             expect(token::identifier);
-            
+
             expect(token::eql);
             expect(token::number);
-			local_vars->append(new Symbol(name, standard_types[BaseType::INT], lex.Value()));
-            
-	    while ( accept(token::comma) ) {
-				expect(token::identifier);
-				name = lex.Identifier(); 
-				expect(token::eql);
-				expect(token::number);
-				local_vars->append(new Symbol(name, standard_types[BaseType::INT], lex.Value()));
-            }
-            
-	    expect(token::semicolon);
-            
-        }
-        if(accept(token::varsym)){
+            local_vars->append(new Symbol(name, standard_types[BaseType::INT], lex.Value()));
 
-			string name = lex.Identifier();   
+            while (accept(token::comma)) {
+                expect(token::identifier);
+                name = lex.Identifier();
+                expect(token::eql);
+                expect(token::number);
+                local_vars->append(new Symbol(name, standard_types[BaseType::INT], lex.Value()));
+            }
+
+            expect(token::semicolon);
+
+        }
+        if (accept(token::varsym)) {
+
+            string name = lex.Identifier();
             expect(token::identifier);
 
             local_vars->append(new Symbol(name, standard_types[BaseType::INT]));
 
-            while (accept(token::comma)){
-					name = lex.Identifier();
-                    expect(token::identifier);
-                    local_vars->append(new Symbol(name, standard_types[BaseType::INT]));
+            while (accept(token::comma)) {
+                name = lex.Identifier();
+                expect(token::identifier);
+                local_vars->append(new Symbol(name, standard_types[BaseType::INT]));
             }
-            expect(token::semicolon); 
-           
+            expect(token::semicolon);
+
         }
-        
-        if(accept(token::arraysym)){
-         
-			name = lex.Identifier();
-            
+
+        if (accept(token::arraysym)) {
+
+            name = lex.Identifier();
+
             expect(token::identifier);
-            
+
             expect(token::lsquare);
 
-			value = lex.Value();
-            
+            value = lex.Value();
+
             expect(token::number);
-            
+
             expect(token::rsquare);
-            
+
             local_vars->append(new Symbol(name, new ArrayType("array", value, BaseType::INT)));
-            while (accept(token::comma)){
-					name = lex.Identifier();
-                    expect(token::identifier);
-                    expect(token::lsquare);
-					value = lex.Value(); 
-                    expect(token::number);
-                    expect(token::rsquare);
-                    local_vars->append(new Symbol(name, new ArrayType("array", value, BaseType::INT)));
+            while (accept(token::comma)) {
+                name = lex.Identifier();
+                expect(token::identifier);
+                expect(token::lsquare);
+                value = lex.Value();
+                expect(token::number);
+                expect(token::rsquare);
+                local_vars->append(new Symbol(name, new ArrayType("array", value, BaseType::INT)));
             }
-            expect(token::semicolon); 
-           
+            expect(token::semicolon);
+
         }
-        
-        while(accept(token::procsym)){
-            
-			string fname = lex.Identifier();
+
+        while (accept(token::procsym)) {
+
+            string fname = lex.Identifier();
             expect(token::identifier);
-            
+
             SymbolTable* parameters = new SymbolTable();
-            
-			name = lex.Identifier();
-            if(accept(token::identifier)){
-                
+
+            name = lex.Identifier();
+            if (accept(token::identifier)) {
+
                 //TODO se i parametri sono array??
-				Symbol *temp = new Symbol(name, standard_types[BaseType::INT]);
+                Symbol *temp = new Symbol(name, standard_types[BaseType::INT]);
                 parameters->append(temp);
-                
-                while(accept(token::comma)){
-					name = lex.Identifier();
+
+                while (accept(token::comma)) {
+                    name = lex.Identifier();
                     expect(token::identifier);
                     temp = new Symbol(name, standard_types[BaseType::INT]);
-					parameters->append(temp);
+                    parameters->append(temp);
                 }
             }
-                
+
             expect(token::semicolon);
             local_vars->append(new Symbol(fname, standard_types[BaseType::FUNCTION]));
-            
-           
-			Block *fbody = block(local_vars, parameters);
+
+
+            Block *fbody = block(local_vars, parameters);
             expect(token::semicolon);
             defs->append(new FunctionDef(local_vars->find(fname), parameters, fbody));
         }
-        
+
         IRNode *stat = statement(new SymbolTable(symtab, local_vars));
-		return new Block(symtab, local_vars, stat, defs);
+        return new Block(symtab, local_vars, stat, defs);
     }
-    
-    IRNode* statement(SymbolTable* symtab){
-        
-        switch(CurTok){
-            
-            case token::identifier : 
+
+    IRNode* statement(SymbolTable* symtab) {
+
+        switch (CurTok) {
+
+            case token::identifier:
             {
                 cout << "accepting identifier" << token::identifier << " == " << CurTok << endl;
-				name = lex.Identifier();
+                name = lex.Identifier();
                 getNextToken();
-                
-                if(accept(token::lsquare)){
+
+                if (accept(token::lsquare)) {
                     //TODO review expr_left, could be dangerous
                     IRNode* expr_left = expression(symtab);
                     Symbol* target = symtab->find(name);
@@ -269,114 +266,114 @@ private:
                     IRNode* expr_right = expression(symtab);
                     return new AssignArrayStat(target, expr_right, expr_left, symtab);
                 }
-                
+
                 Symbol* target = symtab->find(name);
-				expect(token::becomes);
+                expect(token::becomes);
                 IRNode* expr = expression(symtab);
-				return new AssignStat(target, expr, symtab);
+                return new AssignStat(target, expr, symtab);
                 break;
             }
-                
-            case token::callsym :
+
+            case token::callsym:
             {
                 int tok = token::callsym;
                 cout << "accepting call" << token::callsym << " == " << CurTok << endl;
                 getNextToken();
-				string fname = lex.Identifier();
+                string fname = lex.Identifier();
                 expect(token::identifier);
 
-                vector<IRNode*>* parameters = new vector<IRNode*>(); 
-                    
-                do{
-					name = lex.Identifier();
-					value = lex.Value();
-					//TODO if argument is an expression?
+                vector<IRNode*>* parameters = new vector<IRNode*>();
+
+                do {
+                    name = lex.Identifier();
+                    value = lex.Value();
+                    //TODO if argument is an expression?
                     if (accept(token::identifier)) {
                         parameters->push_back(new Var(symtab->find(name), symtab));
 
-                    }else if (accept(token::number)) {
+                    } else if (accept(token::number)) {
 
                         parameters->push_back(new Const(value, symtab));
                     }
 
-                }while(accept(token::comma));
+                } while (accept(token::comma));
 
-                
-			return new CallStat(new CallExpr(symtab->find(fname), tok, parameters, symtab), symtab);
+
+                return new CallStat(new CallExpr(symtab->find(fname), tok, parameters, symtab), symtab);
                 break;
             }
-                
-            case token::beginsym :
+
+            case token::beginsym:
             {
                 cout << "accepting begin" << token::beginsym << " == " << CurTok << endl;
                 getNextToken();
                 StatList* statement_list = new StatList(symtab);
-                do{
-                 statement_list->append(statement(symtab));   
-                }while (accept(token::semicolon));
-				expect(token::endsym);
-				statement_list->printContent();
-				return statement_list;
+                do {
+                    statement_list->append(statement(symtab));
+                } while (accept(token::semicolon));
+                expect(token::endsym);
+                statement_list->printContent();
+                return statement_list;
                 break;
-            }    
-            case token::ifsym :
+            }
+            case token::ifsym:
             {
                 cout << "accepting " << token::ifsym << " == " << CurTok << endl;
                 getNextToken();
                 IRNode* cond = condition(symtab);
-				expect(token::thensym);
-				IRNode* then = statement(symtab);
-				return new IfStat(cond, then, symtab);
+                expect(token::thensym);
+                IRNode* then = statement(symtab);
+                return new IfStat(cond, then, symtab);
                 break;
             }
-                
-            case token::whilesym :
+
+            case token::whilesym:
             {
                 cout << "accepting while " << token::whilesym << " == " << CurTok << endl;
                 getNextToken();
                 IRNode *cond = condition(symtab);
-				expect(token::dosym);
+                expect(token::dosym);
                 IRNode* body = statement(symtab);
-				return new WhileStat(cond, body, symtab);
+                return new WhileStat(cond, body, symtab);
                 break;
-            }    
-            case token::print :
+            }
+            case token::print:
             {
                 cout << "accepting print" << token::print << " == " << CurTok << endl;
                 getNextToken();
-				name = lex.Identifier();
+                name = lex.Identifier();
                 expect(token::identifier);
                 return new PrintStat(symtab->find(name), symtab);
                 break;
-            }    
-            default :
+            }
+            default:
             {
                 error("statement : syntax error");
                 getNextToken();
                 break;
             }
-                
+
         }
-        
-        
-        
+
+
+
     }
-    
-    IRNode* expression(SymbolTable* symtab){
-        
+
+    IRNode* expression(SymbolTable* symtab) {
+
         int op = 0;
-        
-        if (CurTok == token::plus || CurTok == token::minus){
+
+        if (CurTok == token::plus || CurTok == token::minus) {
             op = CurTok;
             getNextToken();
         }
         IRNode* expr = term(symtab);
-        
-        if(op)
+
+        if (op)
             expr = new UnExpr(op, expr, symtab);
-        
+
         while (CurTok == token::plus || CurTok == token::minus) {
-			op = CurTok;
+            op = CurTok;
             getNextToken();
             IRNode* expr2 = term(symtab);
             vector<IRNode*>* children = new vector<IRNode*>();
@@ -385,10 +382,10 @@ private:
             children->push_back(expr2);
             expr = new BinExpr(op, children, symtab);
         }
-        
+
         return expr;
     }
-    
+
     IRNode* term(SymbolTable* symtab) {
         IRNode* expr = factor(symtab);
         int op;
@@ -404,24 +401,24 @@ private:
         }
         return expr;
     }
-    
-    IRNode* factor(SymbolTable *symtab){
-		name = lex.Identifier();
-		value = lex.Value();
+
+    IRNode* factor(SymbolTable *symtab) {
+        name = lex.Identifier();
+        value = lex.Value();
         if (accept(token::identifier)) {
 
-			if(accept(token::lsquare)){
-                    //TODO review expr_left, could be dangerous
-                    IRNode* index = expression(symtab);
-                    expect(token::rsquare);
-                    return new ArrayVar(symtab->find(name), index, symtab);
+            if (accept(token::lsquare)) {
+                //TODO review expr_left, could be dangerous
+                IRNode* index = expression(symtab);
+                expect(token::rsquare);
+                return new ArrayVar(symtab->find(name), index, symtab);
             }
 
             return new Var(symtab->find(name), symtab);
-        
+
         } else if (accept(token::number)) {
             return new Const(value, symtab);
-            
+
         } else if (accept(token::lparen)) {
             IRNode *expr = expression(symtab);
             expect(token::rparen);
@@ -431,17 +428,17 @@ private:
             getNextToken();
         }
     }
-    
-    IRNode* condition(SymbolTable* symtab){
-        
+
+    IRNode* condition(SymbolTable* symtab) {
+
         if (accept(token::oddsym)) {
             return new UnExpr(token::oddsym, expression(symtab), symtab);
         } else {
             IRNode* expr = expression(symtab);
-            if (CurTok == token::eql || CurTok == token::neq || 
-                    CurTok == token::lss || CurTok == token::leq || 
+            if (CurTok == token::eql || CurTok == token::neq ||
+                    CurTok == token::lss || CurTok == token::leq ||
                     CurTok == token::gtr || CurTok == token::geq) {
-				int op = CurTok;
+                int op = CurTok;
                 getNextToken();
                 IRNode* expr2 = expression(symtab);
                 vector<IRNode*>* children = new vector<IRNode*>();
@@ -455,12 +452,12 @@ private:
             }
         }
 
-        
-    }
-    
-    
 
-    
+    }
+
+
+
+
 };
 
 

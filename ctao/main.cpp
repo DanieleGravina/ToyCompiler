@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
             " END; "
 
             " BEGIN "
-			" y := 1;"
+            " y := 1;"
             " x := 1; "
             " a := y; "
             " WHILE x <= 10 DO "

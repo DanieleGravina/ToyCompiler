@@ -6,10 +6,10 @@
 
 BasicBlock::BasicBlock(std::list<IRNode*>* _stats = NULL, list<Symbol*>* _labels = NULL)
 : stats(_stats), labels(_labels), target(NULL), next(NULL), bb_target(NULL), total_var_used(0),
-function_sym(NULL){
+function_sym(NULL) {
 
     myId = ++Id;
-    
+
     init();
 
 }
@@ -46,8 +46,8 @@ void BasicBlock::init() {
 
     }
 
-	Difference(gen, spilled);
-	Difference(kill, spilled);
+    Difference(gen, spilled);
+    Difference(kill, spilled);
 
     set<Symbol*> temp;
 
@@ -72,12 +72,12 @@ bool BasicBlock::liveness_iteration() {
 
     if (next == NULL && bb_target == NULL) {
         if (getFunction()) { //not global
-			function_sym = static_cast<FunctionDef*> (getFunction())->getSymbol();
+            function_sym = static_cast<FunctionDef*> (getFunction())->getSymbol();
             std::list<Symbol*>& global = static_cast<FunctionDef*> (getFunction())->getGlobalSymbol();
             for (std::list<Symbol*>::iterator it = global.begin(); it != global.end(); ++it) {
                 live_out.insert(*it);
             }
-			Difference(live_out, spilled);
+            Difference(live_out, spilled);
         }
     }
 
@@ -97,49 +97,90 @@ bool BasicBlock::liveness_iteration() {
 
 void BasicBlock::spill(Symbol* to_spill) {
 
+
     for (std::list<IRNode*>::iterator it = stats->begin(); it != stats->end(); ++it) {
+
+        if (to_spill->isGlobal()) {
+            if (!(*it)->getSymTab()->find("zero")) {
+                (*it)->getSymTab()->append(new Symbol("zero"));
+            }
+
+        }
 
         if ((*it)->NodeType() == "AssignStat") {
             AssignStat* assign = static_cast<AssignStat*> (*it);
+            IRNode* assign_zero = NULL;
 
             if (assign->getSymbol() == to_spill) {
                 Symbol* temp = new Symbol(Symbol::genUniqueId());
+
+                if (to_spill->isGlobal()) {
+                    Symbol* zero = (*it)->getSymTab()->find("zero");
+                    assign_zero = new AssignStat(zero, new Const(0, (*it)->getSymTab()), (*it)->getSymTab());
+                }
+
                 IRNode* store = new StoreStat(to_spill, new Var(temp, (*it)->getSymTab()), (*it)->getSymTab());
 
                 assign->setSymbol(temp);
 
                 (*it)->getSymTab()->append(temp);
 
-				if(it == stats->end())
-					stats->push_back(store);
-				else
-					stats->insert(++it, store);
+                if (it == stats->end()){
+                    if(assign_zero)
+                        stats->push_back(assign_zero);
+                    stats->push_back(store);
+                }
+                else{
+                    ++it;
+                    if(assign_zero){
+                        stats->insert(it, assign_zero);
+                    }
+                    
+                    stats->insert(it, store);
+                    
+                     for (std::list<IRNode*>::iterator it = stats->begin(); it != stats->end(); ++it) {
+                         cout << (*it)->NodeType() << " " << endl;
+                     }
+                     
+                }
+                
+                
 
                 it = stats->begin(); //restart from first stat
-				continue;
+                continue;
             }
         }
 
 
         for (list<Symbol*>::iterator it2 = (*it)->get_uses().begin(); it2 != (*it)->get_uses().end(); ++it2) {
-			if ((*it2) == to_spill && (*it)->NodeType() != "CallStat") {
+            if ((*it2) == to_spill && (*it)->NodeType() != "CallStat") {
+                
+                IRNode* assign_zero = NULL;
+
+                if (to_spill->isGlobal()) {
+                    Symbol* zero = (*it)->getSymTab()->find("zero");
+                    assign_zero = new AssignStat(zero, new Const(0, (*it)->getSymTab()), (*it)->getSymTab());
+                }
+
                 Symbol* temp = new Symbol(Symbol::genUniqueId());
                 IRNode* load = new LoadStat(temp, new Var(to_spill, (*it)->getSymTab()), (*it)->getSymTab());
-
-				stats->insert(it, load);
+                
+                if(assign_zero)
+                        stats->insert(it, assign_zero);
+                stats->insert(it, load);
 
                 (*it)->replace_uses(to_spill, temp);
 
                 (*it)->getSymTab()->append(temp);
 
                 it = stats->begin(); //restart from first stat
-				break;
+                break;
             }
         }
 
-		to_spill->spill();
+        to_spill->spill();
 
-		spilled.insert(to_spill);
+        spilled.insert(to_spill);
 
 
     }
@@ -252,8 +293,8 @@ CFG::CFG(IRNode* root) {
 
 }
 
-void CFG::spill(Symbol* sym){
-    for(CFG::iterator it = begin(); it != end(); ++it){
+void CFG::spill(Symbol* sym) {
+    for (CFG::iterator it = begin(); it != end(); ++it) {
         (*it)->spill(sym);
     }
 }
