@@ -1,9 +1,9 @@
 /* 
- * File:   cfg.h
- * Author: daniele
- *
- * Created on 20 maggio 2014, 19.29
- */
+* File:   cfg.h
+* Author: daniele
+*
+* Created on 20 maggio 2014, 19.29
+*/
 
 #ifndef CFG_H
 #define	CFG_H
@@ -17,118 +17,118 @@ static int Id = 0;
 class BasicBlock {
 public:
 
-    BasicBlock(std::list<IRNode*>* _stats, list<Symbol*>* _labels);
+	BasicBlock(std::list<IRNode*>* _stats, list<Symbol*>* _labels);
 
-    ~BasicBlock() {
-        if (next) {
-            next->~BasicBlock();
-            delete next;
-        }
-        delete stats;
-        delete labels;
-    }
-    
-    /**
-     * Initialize gen and kill
-     */
-    void init();
-    
-    /**
-     * Perform one liveness iteration
-     * @return true if completed, else false
-     */
-    bool liveness_iteration();
+	~BasicBlock() {
+		if (next) {
+			next->~BasicBlock();
+			delete next;
+		}
+		delete stats;
+		delete labels;
+	}
 
-    IRNode* getFunction() {
-        return static_cast<Stat*> (stats->front())->getFunction();
-    }
+	/**
+	* Initialize gen and kill
+	*/
+	void init();
 
-    std::set<Symbol*>& getLiveOut() {
-        return live_out;
-    }
+	/**
+	* Perform one liveness iteration
+	* @return true if completed, else false
+	*/
+	bool liveness_iteration();
 
-    std::set<Symbol*>& getLiveIn() {
-        return live_in;
-    }
+	IRNode* getFunction() {
+		return static_cast<Stat*> (stats->front())->getFunction();
+	}
 
-    std::set<Symbol*>& getKill() {
-        return kill;
-    }
+	std::set<Symbol*>& getLiveOut() {
+		return live_out;
+	}
 
-    std::set<Symbol*>& getGen() {
-        return gen;
-    }
+	std::set<Symbol*>& getLiveIn() {
+		return live_in;
+	}
 
-    void repr() {
+	std::set<Symbol*>& getKill() {
+		return kill;
+	}
 
-        cout << "BB " << myId << " instr : ";
+	std::set<Symbol*>& getGen() {
+		return gen;
+	}
 
-        for (std::list<IRNode*>::iterator it2 = stats->begin(); it2 != stats->end(); ++it2) {
-            cout << (*it2)->Id() << " " << (*it2)->NodeType() << " ";
-        }
+	void repr() {
 
-        cout << endl;
+		cout << "BB " << myId << " instr : ";
 
-    }
+		for (std::list<IRNode*>::iterator it2 = stats->begin(); it2 != stats->end(); ++it2) {
+			cout << (*it2)->Id() << " " << (*it2)->NodeType() << " ";
+		}
 
-    /**
-     * Return next block, null if not exits
-     * @return BasicBlock*
-     */
-    BasicBlock* getNext() {
-        return next;
-    }
+		cout << endl;
 
-    BasicBlock* getBBTarget() {
-        return bb_target;
-    }
+	}
 
-    void setNext(BasicBlock* next_block) {
-        next = next_block;
-    }
+	/**
+	* Return next block, null if not exits
+	* @return BasicBlock*
+	*/
+	BasicBlock* getNext() {
+		return next;
+	}
 
-    void setBBTarget(BasicBlock* tar) {
-        bb_target = tar;
-    }
+	BasicBlock* getBBTarget() {
+		return bb_target;
+	}
 
-    IRNode* getTarget() {
-        return target;
-    }
+	void setNext(BasicBlock* next_block) {
+		next = next_block;
+	}
 
-    std::list<Symbol*>& getLabels() {
-        return *labels;
-    }
+	void setBBTarget(BasicBlock* tar) {
+		bb_target = tar;
+	}
 
-    std::list<IRNode*>& getStats() {
-        return *stats;
-    }
+	IRNode* getTarget() {
+		return target;
+	}
 
-    void remove_useless_next() {
+	std::list<Symbol*>& getLabels() {
+		return *labels;
+	}
 
-        IRNode* temp = stats->back();
+	std::list<IRNode*>& getStats() {
+		return *stats;
+	}
 
-        if (temp->NodeType() == "BranchStat" && static_cast<BranchStat*> (temp)->isUnconditional()) {
-            next = NULL;
-        }
-    }
+	void remove_useless_next() {
 
-    int getId() const {
-        return myId;
-    }
+		IRNode* temp = stats->back();
 
-    static void Union(std::set<Symbol*>& lhs, std::set<Symbol*>& rhs) {
-        for (std::set<Symbol*>::iterator it = rhs.begin(); it != rhs.end(); ++it) {
-            lhs.insert(*it);
-        }
-    }
+		if (temp->NodeType() == "BranchStat" && static_cast<BranchStat*> (temp)->isUnconditional()) {
+			next = NULL;
+		}
+	}
 
-    static void Difference(std::set<Symbol*>& lhs, std::set<Symbol*>& rhs) {
-        for (std::set<Symbol*>::iterator it = rhs.begin(); it != rhs.end(); ++it) {
-            lhs.erase(*it);
-        }
-    }
+	int getId() const {
+		return myId;
+	}
 
-    void spill(Symbol* to_spill);
+	static void Union(std::set<Symbol*>& lhs, std::set<Symbol*>& rhs) {
+		for (std::set<Symbol*>::iterator it = rhs.begin(); it != rhs.end(); ++it) {
+			lhs.insert(*it);
+		}
+	}
+
+	static void Difference(std::set<Symbol*>& lhs, std::set<Symbol*>& rhs) {
+		for (std::set<Symbol*>::iterator it = rhs.begin(); it != rhs.end(); ++it) {
+			lhs.erase(*it);
+		}
+	}
+
+	void spill(Symbol* to_spill);
 
 	Symbol* getSymOfFunction(){
 		return function_sym;
@@ -136,157 +136,145 @@ public:
 
 private:
 
-    int myId;
-    BasicBlock* next;
-    BasicBlock* bb_target;
-    IRNode* target;
-    std::list<IRNode*>* stats;
-    std::list<Symbol*>* labels;
-    std::set<Symbol*> live_in;
-    std::set<Symbol*> live_out;
-    std::set<Symbol*> kill;
-    std::set<Symbol*> gen;
+	int myId;
+	BasicBlock* next;
+	BasicBlock* bb_target;
+	IRNode* target;
+	std::list<IRNode*>* stats;
+	std::list<Symbol*>* labels;
+	std::set<Symbol*> live_in;
+	std::set<Symbol*> live_out;
+	std::set<Symbol*> kill;
+	std::set<Symbol*> gen;
 	std::set<Symbol*> spilled;
-    int total_var_used;
+	int total_var_used;
 
 	Symbol* function_sym;
 
 };
 
 /**
- * IR to basic block
- * @param root of IR
- * @return list of Basic Block
- */
+* IR to basic block
+* @param root of IR
+* @return list of Basic Block
+*/
 std::list<BasicBlock*>* IRtoBB(IRNode* l);
 
 class CFG {
 public:
 
-    CFG(IRNode* root);
-    
-    std::map<int, BasicBlock*>* heads() {
+	CFG(IRNode* root);
 
-        std::list<BasicBlock*> defs;
-        std::map<int, BasicBlock*>* res = new std::map<int, BasicBlock*>();
+	std::map<int, BasicBlock*>* heads() {
 
-        bool head = true;
-        for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
-            head = true;
-            for (list<BasicBlock*>::iterator it2 = cfg.begin(); it2 != cfg.end(); ++it2) {
-                if ((*it2)->getNext() == *it || (*it2)->getBBTarget() == *it) {
-                    head = false;
-                    break;
-                }
-                if (head)
-                    defs.push_back(*it);
-            }
+		std::list<BasicBlock*> defs;
+		std::map<int, BasicBlock*>* res = new std::map<int, BasicBlock*>();
 
-            for (list<BasicBlock*>::iterator it3 = defs.begin(); it3 != defs.end(); ++it3) {
-                IRNode* first = (*it3)->getStats().front();
-                IRNode* parent = first->getParent();
+		int index = 0;
 
-                while (parent != NULL && parent->NodeType() != "FunctionDef") {
-                    parent = parent->getParent();
-                }
+		Symbol *current = NULL;
 
-                if (parent == NULL) {
-                    (*res)[0] = *it3;
-                } else {
-                    (*res)[parent->Id()] = *it3;
-                }
-            }
-        }
+		(*res)[index] = *cfg.begin();
+		index++;
 
-        return res;
-    }
+		for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
+			if( (*it)->getSymOfFunction() != current){
+				(*res)[index] = *it;
+				index++;
+				current = (*it)->getSymOfFunction();
+			}
+		}
 
-    void liveness() {
+		return res;
 
-        int counter = 0;
+	}
 
-        while (counter != cfg.size()) {
-            counter = 0;
-            for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
-                if ((*it)->liveness_iteration())
-                    counter++;
-            }
-        }
+	void liveness() {
 
-    }
+		int counter = 0;
 
-    void print_liveness() {
+		while (counter != cfg.size()) {
+			counter = 0;
+			for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
+				if ((*it)->liveness_iteration())
+					counter++;
+			}
+		}
 
-        for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
-            cout << "BB " << (*it)->getId() << endl;
+	}
 
-            if ((*it)->getNext() != NULL) {
-                cout << "next " << (*it)->getNext()->getId() << endl;
-            }
+	void print_liveness() {
 
-            if ((*it)->getBBTarget() != NULL) {
-                cout << "BB target " << (*it)->getBBTarget() ->getId() << endl;
-            }
+		for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
+			cout << "BB " << (*it)->getId() << endl;
 
-            (*it)->repr();
+			if ((*it)->getNext() != NULL) {
+				cout << "next " << (*it)->getNext()->getId() << endl;
+			}
+
+			if ((*it)->getBBTarget() != NULL) {
+				cout << "BB target " << (*it)->getBBTarget() ->getId() << endl;
+			}
+
+			(*it)->repr();
 
 			cout << "gen : ";
-            for (std::set<Symbol*>::iterator it2 = (*it)->getGen().begin(); it2 != (*it)->getGen().end(); ++it2) {
-                cout << (*it2)->getName() << " ";
-            }
-            cout << endl;
+			for (std::set<Symbol*>::iterator it2 = (*it)->getGen().begin(); it2 != (*it)->getGen().end(); ++it2) {
+				cout << (*it2)->getName() << " ";
+			}
+			cout << endl;
 
 			cout << "kill : ";
-            for (std::set<Symbol*>::iterator it2 = (*it)->getKill().begin(); it2 != (*it)->getKill().end(); ++it2) {
-                cout << (*it2)->getName() << " ";
-            }
-            cout << endl;
+			for (std::set<Symbol*>::iterator it2 = (*it)->getKill().begin(); it2 != (*it)->getKill().end(); ++it2) {
+				cout << (*it2)->getName() << " ";
+			}
+			cout << endl;
 
-            cout << "live_in : ";
-            for (std::set<Symbol*>::iterator it2 = (*it)->getLiveIn().begin(); it2 != (*it)->getLiveIn().end(); ++it2) {
-                cout << (*it2)->getName() << " ";
-            }
-            cout << endl;
+			cout << "live_in : ";
+			for (std::set<Symbol*>::iterator it2 = (*it)->getLiveIn().begin(); it2 != (*it)->getLiveIn().end(); ++it2) {
+				cout << (*it2)->getName() << " ";
+			}
+			cout << endl;
 
-            cout << "live_out : ";
+			cout << "live_out : ";
 
-            for (std::set<Symbol*>::iterator it2 = (*it)->getLiveOut().begin(); it2 != (*it)->getLiveOut().end(); ++it2) {
-                cout << (*it2)->getName() << " ";
-            }
+			for (std::set<Symbol*>::iterator it2 = (*it)->getLiveOut().begin(); it2 != (*it)->getLiveOut().end(); ++it2) {
+				cout << (*it2)->getName() << " ";
+			}
 
-            cout << endl;
-        }
+			cout << endl;
+		}
 
-    }
+	}
 
-    BasicBlock* find_target_bb(Symbol* label) {
-        for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
-            std::list<Symbol*>& labels = (*it)->getLabels();
-            for (list<Symbol*>::iterator it2 = labels.begin(); it2 != labels.end(); ++it2) {
-                if (*it2 == label) {
+	BasicBlock* find_target_bb(Symbol* label) {
+		for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
+			std::list<Symbol*>& labels = (*it)->getLabels();
+			for (list<Symbol*>::iterator it2 = labels.begin(); it2 != labels.end(); ++it2) {
+				if (*it2 == label) {
 
-                    return *it;
-                }
-            }
-        }
-        if (label)
-            cout << "Error cfg, label " << label->getName() << " not found" << endl;
-    }
-    
-    void spill(Symbol* sym);
+					return *it;
+				}
+			}
+		}
+		if (label)
+			cout << "Error cfg, label " << label->getName() << " not found" << endl;
+	}
 
-    typedef std::list<BasicBlock*>::iterator iterator;
+	void spill(Symbol* sym);
 
-    iterator begin() {
-        return cfg.begin();
-    }
+	typedef std::list<BasicBlock*>::iterator iterator;
 
-    iterator end() {
-        return cfg.end();
-    }
+	iterator begin() {
+		return cfg.begin();
+	}
+
+	iterator end() {
+		return cfg.end();
+	}
 
 private:
-    std::list<BasicBlock*> cfg;
+	std::list<BasicBlock*> cfg;
 };
 
 

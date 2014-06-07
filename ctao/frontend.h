@@ -65,6 +65,8 @@ public:
 
         cfg.print_liveness();
 
+		cfg.heads();
+
         RegisterAlloc *regalloc = new RegisterAlloc(cfg, 3);
 
         while (!regalloc->TryAlloc()) {
