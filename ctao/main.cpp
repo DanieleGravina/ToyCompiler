@@ -32,7 +32,10 @@ int main(int argc, char **argv) {
 
     const char* s_punt = "VAR x , squ, a, y; "
             " PROCEDURE square z ; "
+			" VAR uno, due;"
             " BEGIN "
+			"  uno := 1; "
+			"  due := 2; "
             "  squ := z * z "
             " END; "
 

@@ -18,6 +18,8 @@
 #include "registeralloc.h"
 #include "Assembler.h"
 
+#define NUM_REGS 3
+
 using namespace std;
 
 class frontend {
@@ -59,34 +61,54 @@ public:
 
         root->repr();
 
-        CFG cfg(static_cast<IRNode*> (root));
+		std::list<CFG*> l_cfg;
 
-        cfg.liveness();
+		std::list<IRNode*> statlists;
 
-        cfg.print_liveness();
+		root->getStatLists(statlists);
 
-		cfg.heads();
+		for (list<IRNode*>::iterator it = statlists.begin(); it != statlists.end(); ++it) {
 
-        RegisterAlloc *regalloc = new RegisterAlloc(cfg, 3);
+			cout << "Statlist : " << (*it)->Id() << "to BBs" << endl;
 
-        while (!regalloc->TryAlloc()) {
+			std::list<BasicBlock*> *tmp = IRtoBB(*it);
 
-            regalloc->res();
+			l_cfg.push_back(new CFG(*tmp));
 
-            cfg.spill(regalloc->SymToSpill());
-            cfg.liveness();
-            cfg.print_liveness();
-            delete regalloc;
-            regalloc = new RegisterAlloc(cfg, 3);
+			delete tmp;
+		}
 
-        }
+		for (std::list<CFG*>::iterator it = l_cfg.begin(); it != l_cfg.end(); ++it) {
+			(*it)->liveness();
+			(*it)->print_liveness();
+			cout << endl;
+		}
 
-        regalloc->res();
+		std::map<CFG*, RegisterAlloc*> procedures;
 
-        CodeGenerator codgen(cfg, *regalloc);
+		for (std::list<CFG*>::iterator it = l_cfg.begin(); it != l_cfg.end(); ++it) {
+			procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
+			while(!procedures[*it]->TryAlloc()){
+				procedures[*it]->res();
+
+				(*it)->spill(procedures[*it]->SymToSpill());
+				(*it)->liveness();
+				(*it)->print_liveness();
+
+				delete procedures[*it];
+
+				procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
+			}
+
+			procedures[*it]->res();
+
+			cout << "************************************" << endl;
+		}
 
 
-        delete regalloc;
+
+
+        CodeGenerator codgen(procedures);
     }
 
 

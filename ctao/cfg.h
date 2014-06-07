@@ -134,6 +134,10 @@ public:
 		return function_sym;
 	}
 
+	SymbolTable* parameters(){
+		
+	}
+
 private:
 
 	int myId;
@@ -163,31 +167,7 @@ std::list<BasicBlock*>* IRtoBB(IRNode* l);
 class CFG {
 public:
 
-	CFG(IRNode* root);
-
-	std::map<int, BasicBlock*>* heads() {
-
-		std::list<BasicBlock*> defs;
-		std::map<int, BasicBlock*>* res = new std::map<int, BasicBlock*>();
-
-		int index = 0;
-
-		Symbol *current = NULL;
-
-		(*res)[index] = *cfg.begin();
-		index++;
-
-		for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
-			if( (*it)->getSymOfFunction() != current){
-				(*res)[index] = *it;
-				index++;
-				current = (*it)->getSymOfFunction();
-			}
-		}
-
-		return res;
-
-	}
+	CFG(std::list<BasicBlock*>& proc);
 
 	void liveness() {
 
@@ -263,6 +243,10 @@ public:
 
 	void spill(Symbol* sym);
 
+	std::set<Symbol*>& varSpilled(){
+		return spilled;
+	}
+
 	typedef std::list<BasicBlock*>::iterator iterator;
 
 	iterator begin() {
@@ -275,6 +259,7 @@ public:
 
 private:
 	std::list<BasicBlock*> cfg;
+	std::set<Symbol*> spilled;
 };
 
 

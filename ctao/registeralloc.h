@@ -99,6 +99,14 @@ public:
         return sym_to_spill;
     }
 
+	std::set<Symbol*>& Vars(){
+		return all_vars;
+	}
+
+	SymbolTable* getParameters(){
+		return parameters;
+	}
+
 
 private:
 
@@ -120,21 +128,6 @@ private:
     }
 
     void replace(Symbol* var, Symbol* reg) {
-
-        for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
-
-            if (accessed_vars[*it]->find(var) != accessed_vars[*it]->end()) {
-                accessed_vars[*it]->erase(var);
-                accessed_vars[*it]->insert(reg);
-            }
-
-            if (crossed_vars[*it]->find(var) != crossed_vars[*it]->end()) {
-                crossed_vars[*it]->erase(var);
-                crossed_vars[*it]->insert(reg);
-            }
-
-        }
-
         vars[var] = reg;
     }
 
@@ -143,29 +136,6 @@ private:
         std::set<Symbol*> the_vars = graph.getInterfering(var);
         std::set<Symbol*> interfering;
         std::set<Symbol*>* not_interfering = new std::set<Symbol*>();
-
-        /*std::set<Symbol*> interfering;
-        std::set<Symbol*> the_vars;
-        std::set<Symbol*>* not_interfering = new std::set<Symbol*>();
-
-        for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
-            BasicBlock::Union(the_vars, *accessed_vars[*it]);
-            BasicBlock::Union(the_vars, *crossed_vars[*it]);
-            if (the_vars.find(var) != the_vars.end()) {
-                                the_vars.erase(var);
-                BasicBlock::Union(interfering, the_vars);
-            }
-
-            the_vars.clear();
-
-                        BasicBlock::Union(the_vars, *accessed_vars[*it]);
-            if (the_vars.find(var) != the_vars.end()) {
-                                the_vars.erase(var);
-                BasicBlock::Union(interfering, the_vars);
-            }
-
-            the_vars.clear();
-        }*/
 
         for (std::set<Symbol*>::iterator it = the_vars.begin(); it != the_vars.end(); ++it) {
             if (vars[*it] != NULL)
@@ -227,6 +197,8 @@ private:
     unsigned int counter_regs;
     Symbol* sym_to_spill;
     Graph graph;
+
+	SymbolTable* parameters;
 };
 
 

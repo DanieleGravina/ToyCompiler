@@ -47,6 +47,11 @@ public:
     : name(_name), size(_size), basetype(_basetype) {
     }
 
+	virtual ~Type(){
+	}
+
+
+
     size_t getSize() const {
         return size;
     }
@@ -69,7 +74,7 @@ public:
     }
 
     ArrayType(string name, size_t size, int basetype) :
-    Type(name, size * 32, basetype) {
+    Type(name, size * 4, basetype) {
     };
 
 };
@@ -96,10 +101,11 @@ private:
 class Symbol {
 public:
 
-    Symbol() : value(0), spilled(false), global(false) {
+    Symbol() : stype(NULL), value(0), spilled(false), global(false) {
     }
 
-    Symbol(string _name) : name(_name), value(0), spilled(false), global(false) {
+    Symbol(string _name) : name(_name), stype(NULL), value(0), spilled(false), global(true) {
+		stype = new Type("INTEGER", 32, BaseType::INT);
     }
 
     Symbol(string _name, Type* _stype, Value _value = NULL)
@@ -827,11 +833,13 @@ private:
 class LoadStat : public Stat {
 public:
 
-    LoadStat(Symbol* _sym, IRNode* _expr, SymbolTable* symtab) :
+	LoadStat(Symbol* _sym, IRNode* _expr1, IRNode* _expr2, SymbolTable* symtab) :
     Stat(symtab) {
-        _expr->setParent(this);
+        _expr1->setParent(this);
+		_expr2->setParent(this);
         vector<IRNode*>* children = new vector<IRNode*>();
-        children->push_back(_expr);
+        children->push_back(_expr1);
+		children->push_back(_expr2);
         setChildren(children);
         sym = _sym;
     }
@@ -867,11 +875,13 @@ private:
 class StoreStat : public Stat {
 public:
 
-    StoreStat(Symbol* _sym, IRNode* expr_right, SymbolTable* symtab) :
+	StoreStat(Symbol* _sym, IRNode* expr_1, IRNode* expr_2, SymbolTable* symtab) :
     sym(_sym), Stat(symtab) {
-        expr_right->setParent(this);
+        expr_1->setParent(this);
+		expr_2->setParent(this);
         vector<IRNode*>* children = new vector<IRNode*>();
-        children->push_back(expr_right);
+        children->push_back(expr_1);
+		children->push_back(expr_2);
         setChildren(children);
     }
 
@@ -1065,7 +1075,7 @@ public:
     }
 
     virtual void lower() {
-        IRNode* expr_left = getChildren()->at(0);
+       /* IRNode* expr_left = getChildren()->at(0);
         IRNode* expr_right = getChildren()->at(1);
 
 
@@ -1098,7 +1108,7 @@ public:
 
         statements->setParent(getParent());
 
-        getParent()->replace(this, assign);
+        getParent()->replace(this, assign);*/
 
     }
 
@@ -1438,12 +1448,12 @@ public:
         return s;
     }
 
-    const SymbolTable* getParameters() const {
+    SymbolTable* getParameters() {
         return parameters;
     }
 
 private:
-    const SymbolTable* parameters;
+    SymbolTable* parameters;
     IRNode* body;
     std::list<Symbol*> global_symbol;
 
