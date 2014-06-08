@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
     }*/
 
     const char* s_punt = 
-		    " VAR x , squ; "
+		    " VAR x , squ, a, y, c, f; "
 
             " PROCEDURE square z ; "
             " BEGIN "
@@ -40,6 +40,8 @@ int main(int argc, char **argv) {
 
             " BEGIN "
             " x := 1; "
+			" a := y; "
+			" c := f; "
             " WHILE x <= 10 DO "
             "  BEGIN "
             "  CALL square x ; "

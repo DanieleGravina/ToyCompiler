@@ -36,13 +36,9 @@ void BasicBlock::init() {
 
 		Difference(uses, spilled);
 
-		for (set<Symbol*>::iterator it3 = kill.begin(); it3 != kill.end(); ++it3) {
-			uses.erase(*it3);
-		}
+		Difference(uses, kill);
 
-		for (set<Symbol*>::iterator it4 = uses.begin(); it4 != uses.end(); ++it4) {
-			gen.insert(*it4);
-		}
+		Union(gen, uses);
 
 		if ((*it)->NodeType() == "AssignStat" || (*it)->NodeType() == "Load") {
 			kill.insert(static_cast<Stat*> (*it)->getSymbol());
@@ -148,7 +144,10 @@ void BasicBlock::spill(Symbol* to_spill) {
 
 
 
-				it = stats->begin(); //restart from first stat
+				std::list<IRNode*>::iterator it_old = it;
+				it = stats->begin();
+				while(it != it_old)
+					it++;
 				continue;
 			}
 		}
@@ -184,7 +183,11 @@ void BasicBlock::spill(Symbol* to_spill) {
 
 				(*it)->getSymTab()->append(temp);
 
-				it = stats->begin(); //restart from first stat
+				std::list<IRNode*>::iterator it_old = it;
+				it = stats->begin();
+				while(it != it_old)
+					it++;
+				
 				break;
 			}
 		}
@@ -217,7 +220,7 @@ void BasicBlock::insertLoadGlobal(){
 	SymbolTable* symtab = (*stats->begin())->getSymTab();
 
 	for(SymbolTable::iterator it = symtab->begin(); it != symtab->end(); ++it){
-		if(it->second->isGlobal() && (it->second->getType().getName() != "Function" && it->second->getType().getName() != "Label")){
+		if(it->second->isGlobal() && !it->second->isSpilled() && (it->second->getType().getName() != "Function" && it->second->getType().getName() != "Label")){
 			IRNode* load = new LoadStat(it->second, new Var(zero, symtab), new Var(it->second, symtab), symtab);
 			static_cast<LoadStat*>(load)->setInitial();
 			load->setParent(parent);
@@ -249,7 +252,7 @@ void BasicBlock::insertStoreGlobal(){
 	stats->push_back(assign_zero);
 
 	for(SymbolTable::iterator it = symtab->begin(); it != symtab->end(); ++it){
-		if(it->second->isGlobal() && (it->second->getType().getName() != "Function" && it->second->getType().getName() != "Label")){
+		if(it->second->isGlobal() && !it->second->isSpilled() && (it->second->getType().getName() != "Function" && it->second->getType().getName() != "Label")){
 			IRNode* store = new StoreStat(it->second, new Var(zero, symtab), new Var(it->second, symtab), symtab);
 			static_cast<StoreStat*>(store)->setFinal();
 			store->setParent(parent);
