@@ -41,6 +41,26 @@ public:
 		return convert.str();
 	}
 
+	static string store(Symbol* first, Symbol* second, Symbol *third){
+		return "str " + first->getName() + " " + second->getName() + " " + third->getName();
+	}
+
+	static string store(Symbol* first, Symbol* second, int imm){
+		return "str " + first->getName() + " " + second->getName() + " " + convert(imm);
+	}
+
+	static string load(Symbol* first, Symbol* second, Symbol *third){
+		return "ldr " + first->getName() + " " + second->getName() + " " + third->getName();
+	}
+
+	static string load(Symbol* first, Symbol* second, int imm){
+		return "ldr " + first->getName() + " " + second->getName() + " " + convert(imm);
+	}
+
+	static string nop(){
+		return "nop ";
+	}
+
 	static string mov(Symbol* first, Symbol* second){
 		return "mov " + first->getName() + " " + second->getName();
 	}
@@ -146,11 +166,11 @@ public:
 		int counter = 0;
 		for (std::map<Symbol*, int>::iterator it = spill_offset.begin(); it != spill_offset.end(); ++it, ++counter) {
 			ostringstream convert;
-			convert << "POP " << "{ R" << counter << "}";
+			convert << "pop " << "{ r" << counter << "}";
 			insertCode(convert.str());
 		}
 
-		insertCode("BX LR");
+		insertCode("       bx lr");
 
 	}
 
@@ -173,7 +193,7 @@ private:
 class CodeGenerator {
 public:
 
-	CodeGenerator(std::map<CFG*, RegisterAlloc*>& _procedures) : procedures(_procedures), aux(20) {
+	CodeGenerator(std::map<CFG*, RegisterAlloc*>& _procedures) : procedures(_procedures), aux(20), mainCode(NULL) {
 
 		aux[Register::sp] = new Symbol("sp");
 		aux[Register::fp] = new Symbol("fp");
@@ -195,13 +215,19 @@ public:
 
 		for(std::map<CFG*, RegisterAlloc*>::iterator it = procedures.begin(); it != procedures.end(); ++it){
 
-			if(!cursym)
+			if(!(*it->first->begin())->getFunction()) //main
 				cursym = mainSym;
 			else
 				cursym = static_cast<FunctionDef*>((*it->first->begin())->getFunction())->getSymbol();
 
 			FunctionCode* current = new FunctionCode(cursym);
-			functions.push_front(current);
+
+			if(cursym == mainSym)
+				mainCode = current; //main has to be inserted as last one
+			else
+				functions.push_front(current);
+
+			addInitialDeclaration(current, (*(it->first->begin()))->getSymTab());
 
 			current->insertRegAlloc(it->second);
 
@@ -217,38 +243,38 @@ public:
 
 			int calle_save = 4;
 
-			for (std::set<Symbol*>::iterator it2 = vars.begin(); it2 != vars.end(); ++it2) {
-				if(current->getFunctionSym() != mainSym && !(*it2)->isSpilled()){
-					if(params && !params->find((*it2)->getName()) ){
-						to_push.push_back(aux[calle_save]);
-						calle_save++;
-					}
-				}
+			while(calle_save < it->second->num_reg()){
+				to_push.push_back(aux[calle_save]);
+				calle_save++;
 			}
 
-			current->insertCode(Instruction::push(to_push));
+			current->insertCode("       " + Instruction::push(to_push));
 
-			current->insertCode(Instruction::mov(aux[Register::fp], aux[Register::sp]));
+			current->insertCode("       " + Instruction::mov(aux[Register::fp], aux[Register::sp]));
 
 			int numLocalVariable = 0;
 
-			for (std::set<Symbol*>::iterator it2 = vars.begin(); it2 != vars.end(); ++it2) {
-				if(!(*it2)->isGlobal()){
-					if((*it2)->getType().getName() == "array"){
-						int size = (*it2)->getType().getSize();
-						current->insertCode(Instruction::sub(aux[Register::sp], aux[Register::sp], size) ); //space for local array
+			SymbolTable* symtab = (*(it->first->begin()))->getSymTab();
+
+			for (SymbolTable::iterator it2 = symtab->begin(); it2 != symtab->end(); ++it2) {
+				if(!(it2->second)->isGlobal() && (it2->second->getType().getName() != "Function" && it2->second->getType().getName() != "Label")){
+					if((it2->second)->getType().getName() == "array"){
+						int size = (it2->second)->getType().getSize();
+						current->insertCode("       " + Instruction::sub(aux[Register::sp], aux[Register::sp], size) ); //space for local 
+						Symbol *reg_array = it->second->mapVarReg()[it2->second]; 
+						current->insertCode("       " + Instruction::mov(reg_array, aux[Register::fp]));
 					}
 					else{
-						if(params && !params->find((*it2)->getName()) && (*it2)->isSpilled() )
+						if(params && !params->find((it2->second)->getName()) && (it2->second)->isSpilled() )
 							numLocalVariable++;
 					}
 
-					current->insertLocal(*it2);
+					current->insertLocal(it2->second);
 				}
 			}
 
 			if(numLocalVariable)
-				current->insertCode(Instruction::sub(aux[Register::sp], aux[Register::sp], OFFSET*numLocalVariable)); //space for local variables
+				current->insertCode("       " + Instruction::sub(aux[Register::sp], aux[Register::sp], OFFSET*numLocalVariable)); //space for local variables
 
 
 			for (std::list<BasicBlock*>::iterator it2 = it->first->begin(); it2 != it->first->end(); ++it2) {
@@ -294,28 +320,33 @@ public:
 
 			calle_save = 4;
 
-			for (std::set<Symbol*>::iterator it = vars.begin(); it != vars.end(); ++it) {
-				if(current->getFunctionSym() != mainSym && !(*it)->isSpilled()){
-					if(params && !params->find((*it)->getName()) ){
-						to_pop.push_back(aux[calle_save]);
-						calle_save++;
-					}
-				}
+			while(calle_save < it->second->num_reg()){
+				to_pop.push_back(aux[calle_save]);
+				calle_save++;
 			}
 
-			current->insertCode(Instruction::mov(aux[Register::fp], aux[Register::sp]));
-			current->insertCode(Instruction::pop(to_pop));
+			/*for (std::set<Symbol*>::iterator it = vars.begin(); it != vars.end(); ++it) {
+			if(current->getFunctionSym() != mainSym && !(*it)->isSpilled()){
+			if(params && !params->find((*it)->getName()) ){
+			to_pop.push_back(aux[calle_save]);
+			calle_save++;
+			}
+			}
+			}*/
+
+			current->insertCode("       " + Instruction::mov(aux[Register::fp], aux[Register::sp]));
+			current->insertCode("       " + Instruction::pop(to_pop));
 
 			cout << endl;
 
 		}
 
+		functions.push_back(mainCode);
+
 
 
 		for (std::list<FunctionCode*>::iterator it = functions.begin(); it != functions.end(); ++it) {
 			(*it)->insertEnd();
-
-			cout << (*it)->getFunctionSym()->getName() << " : " << endl;
 
 			(*it)->print();
 
@@ -338,28 +369,67 @@ public:
 
 private:
 
+	void addInitialDeclaration(FunctionCode *current, SymbolTable* symtab){
+
+		ostringstream convert;
+
+		convert << 0;
+
+		string num = convert.str();
+
+		current->insertCode(".data");
+
+
+		if(current->getFunctionSym() == mainSym){
+			for (SymbolTable::iterator it = symtab->begin(); it != symtab->end(); ++it) {
+				if((it->second)->isGlobal() && (it->second->getType().getName() != "Function" && it->second->getType().getName() != "Label")){
+					if((it->second)->getType().getName() == "array"){
+						current->insertCode(it->first + ": ");
+						for(int i = 0; i < (it->second)->getType().getSize(); ++i){
+							current->insertCode("       .int " + num);
+						}
+					}
+					else{
+						current->insertCode(it->first + ": .int " + num); 
+					}
+				}
+
+			}
+		}
+
+		current->insertCode(".text");
+		current->insertCode(".global " + current->getFunctionSym()->getName());
+		current->insertCode(".type " + current->getFunctionSym()->getName() + ", %function");
+		current->insertCode(current->getFunctionSym()->getName() + ":");
+
+	}
+
 	void genEmpty(IRNode* stat, FunctionCode* current, Symbol* label) {
 		string label_name;
 
 		if (label) {
 			label_name = label->getName() + ": ";
 		}
+		else{
+			label_name = "       ";
+		}
 
-		cout << label_name + "NOP" << endl;
-
-		current->insertCode(label_name + "NOP");
+		current->insertCode(label_name + Instruction::nop());
 	}
 
 	void genStore(IRNode* stat, FunctionCode* current, Symbol* label) {
 
-		string r1;
-		string r2;
-		string r3;
+		Symbol *r1, *r2, *r3 = NULL;
+
+		int imm;
 
 		string label_name;
 
 		if (label) {
 			label_name = label->getName() + ": ";
+		}
+		else{
+			label_name = "       ";
 		}
 
 		StoreStat* store = static_cast<StoreStat*> (stat);
@@ -369,79 +439,88 @@ private:
 		if (reg->isSpilled()) {
 
 			if(reg->isGlobal()){
-				IRNode *expr = store->getChildren()->at(0);
-
-				if(expr->NodeType() == "Var" && static_cast<Var*>(expr)->getSymbol()->isGlobal()){
-					Symbol* zero = current->regalloc().mapVarReg()[static_cast<Var*>(expr)->getSymTab()->find("zero")];
-					r2 = zero->getName();
-				}
-				r3 = reg->getName();
+				IRNode *expr = store->getChildren()->at(0);;
+				Symbol temp(TermCode(expr, current));
+				r2 = &temp;
+				imm = 0;
 			}
 			else{
-				ostringstream convert;
-				int offset = current->getSpillOffset()[reg];
-				convert << "#" << offset;
-				r2 = "EBS " + convert.str();
+				imm = current->getSpillOffset()[reg];
+				r2 = aux[Register::fp];
 			}
+
 		} else {
-			reg = current->regalloc().mapVarReg()[store->getSymbol()];
-			r2 = reg->getName();
+			r1 = current->regalloc().mapVarReg()[store->getSymbol()];
+			imm = 0;
+
+			if (store->getChildren()->at(0)->NodeType() == "BinExpr") {
+			} else {
+				r3 = (static_cast<Var*>(store->getChildren()->at(1)))->getSymbol();
+				if(!store->isFinal()){
+					r3 = current->regalloc().mapVarReg()[r3];
+				}
+				r2 = (static_cast<Var*>(store->getChildren()->at(0)))->getSymbol();
+				r2 = current->regalloc().mapVarReg()[r2];
+			}
 		}
 
-		if (store->getChildren()->at(0)->NodeType() == "BinExpr") {
-		} else {
-			r1 = TermCode(store->getChildren()->at(0), current);
-		}
+		if(r3)
+			current->insertCode(label_name + Instruction::store(r1, r2, r3));
+		else
+			current->insertCode(label_name + Instruction::store(r1, r2, imm));
 
-		cout << label_name + "STR " + r1 + " " + r2 + " " + r3 << endl;
-
-		current->insertCode(label_name + "STR " + r1 + " " + r2 + " " + r3);
 	}
 
 	void genLoad(IRNode* stat, FunctionCode* current, Symbol* label) {
 
-		string r1;
-		string r2;
-		string r3;
+		Symbol *r1, *r2, *r3 = NULL;
+		int imm = 0;
 
 		string label_name;
 
 		if (label) {
 			label_name = label->getName() + ": ";
 		}
+		else{
+			label_name = "       ";
+		}
 
 		LoadStat* load = static_cast<LoadStat*> (stat);
 
-		Symbol* reg = current->regalloc().mapVarReg()[load->getSymbol()];
+		r1 = current->regalloc().mapVarReg()[load->getSymbol()];
 
-		r1 = reg->getName();
+		Symbol* reg = static_cast<Var*>(load->getChildren()->at(0))->getSymbol();
 
-		if (load->getChildren()->at(0)->NodeType() == "BinExpr") {
+		if (reg->isSpilled()) {
+
+			if(reg->isGlobal()){
+				IRNode *expr = load->getChildren()->at(0);
+				r2 = static_cast<Var*>(load->getChildren()->at(0))->getSymbol();
+				r2 = current->regalloc().mapVarReg()[r2];
+				r3 = static_cast<Var*>(load->getChildren()->at(1))->getSymbol();
+			}
+			else{
+				imm = current->getSpillOffset()[reg];
+				r2 = aux[Register::fp];
+			}
+
 		} else {
 
-			IRNode *expr = load->getChildren()->at(0);
-
-			if(expr->NodeType() == "Var" && static_cast<Var*>(expr)->getSymbol()->isGlobal()){
-				Symbol* zero = current->regalloc().mapVarReg()[static_cast<Var*>(expr)->getSymTab()->find("zero")];
-				r3 = zero->getName();
+			if (load->getChildren()->at(0)->NodeType() == "BinExpr") {
+			} else {
+				r3 = (static_cast<Var*>(load->getChildren()->at(1)))->getSymbol();
+				if(!load->isInitial()){
+					r3 = current->regalloc().mapVarReg()[r3];
+				}
+				r2 = (static_cast<Var*>(load->getChildren()->at(0)))->getSymbol();
+				r2 = current->regalloc().mapVarReg()[r2];
 			}
-			r2 = TermCode(load->getChildren()->at(0), current);
 		}
 
-		cout << "LDR " + r1 + " " + r2 + " " + r3 << endl;
-
-		current->insertCode(label_name + "LDR " + r1 + " " + r2 + " " + r3);
-	}
-
-	void genPush(IRNode* stat, FunctionCode* current) {
-
-		if (!stat) {
-			cout << "PUSH {#0}" << endl;
-			current->insertCode("PUSH {#0}");
-		}
-	}
-
-	void genPop(IRNode* stat, FunctionCode* current) {
+		if(r3)
+			current->insertCode(label_name + Instruction::load(r1, r2, r3));
+		else
+			current->insertCode(label_name + Instruction::load(r1, r2, imm));
 	}
 
 	void genCall(IRNode* stat, FunctionCode* current, Symbol* label) {
@@ -451,8 +530,11 @@ private:
 		if (label) {
 			label_name = label->getName() + ": ";
 		}
+		else{
+			label_name = "       ";
+		}
 
-		string op = "BL";
+		string op = "bl";
 		string call_name;
 
 		CallStat* call = static_cast<CallStat*> (stat);
@@ -475,13 +557,24 @@ private:
 
 				convert << i;
 
-				if (!i) {
-					push = label_name + "PUSH { R" + convert.str();
-				} else {
-					push += ", R" + convert.str();
+				int min;
+
+				if(current->regalloc().num_reg() < MAX_NUM_ARGUMENTS)
+					min = current->regalloc().num_reg();
+				else
+					min = MAX_NUM_ARGUMENTS;
+
+				for(int j = 0; j < min; j++){
+					ostringstream convert2;
+					convert2 << j;
+					if (!j) {
+						push = label_name + "push { r" + convert2.str();
+					} else {
+						push += ", r" + convert2.str();
+					}
 				}
 
-				mov = "MOV R" + convert.str();
+				mov = "mov r" + convert.str();
 				mov += " ";
 				mov += TermCode(argument, current);
 
@@ -496,21 +589,16 @@ private:
 		if (push.size()) {
 			push += " }";
 
-			cout << push << endl;
-
 			current->insertCode(push);
 		} else {
 			call_name = label_name + call_name;
 		}
 
 		for (vector<string>::iterator it = movs.begin(); it != movs.end(); ++it) {
-			cout << *it << endl;
-			current->insertCode(*it);
+			current->insertCode("       " + *it);
 		}
 
-		cout << op + " " + call_name << endl;
-
-		current->insertCode(op + " " + call_name);
+		current->insertCode("       " + op + " " + call_name);
 
 		for (std::list<IRNode*>::size_type i = 0; i < call_expr->getChildren()->size(); ++i) {
 			if (i < MAX_NUM_ARGUMENTS) {
@@ -520,10 +608,21 @@ private:
 
 				convert << i;
 
-				if (!i) {
-					pop = "POP { R" + convert.str();
-				} else {
-					pop += ", R" + convert.str();
+				int min = 0;
+
+				if(current->regalloc().num_reg() < MAX_NUM_ARGUMENTS)
+					min = current->regalloc().num_reg();
+				else
+					min = MAX_NUM_ARGUMENTS;
+
+				for(int j = 0; j < min; j++){
+					ostringstream convert2;
+					convert2 << j;
+					if (!j) {
+						pop = "pop { r" + convert2.str();
+					} else {
+						pop += ", r" + convert2.str();
+					}
 				}
 			}
 		}
@@ -531,9 +630,7 @@ private:
 		if (pop.size()) {
 			pop += " }";
 
-			cout << pop << endl;
-
-			current->insertCode(pop);
+			current->insertCode(label_name + pop);
 		}
 	}
 
@@ -544,10 +641,13 @@ private:
 		if (label) {
 			label_name = label->getName() + ": ";
 		}
+		else{
+			label_name = "       ";
+		}
 
 		BranchStat* branch = static_cast<BranchStat*> (stat);
 
-		string op = "CMP";
+		string op = "cmp";
 
 		string r1 = TermCode(branch->getChildren()->at(0)->getChildren()->at(1), current);
 
@@ -560,6 +660,10 @@ private:
 
 	void genBranch(IRNode* stat, FunctionCode* current, Symbol* label_stat) {
 
+		string label_name;
+
+		label_name = "       ";
+
 		string op;
 
 		BranchStat* branch = static_cast<BranchStat*> (stat);
@@ -569,8 +673,9 @@ private:
 		string label = label_sym->getName();
 
 		if (branch->isUnconditional()) {
-			cout << "B " + label << endl;
-			current->insertCode("B " + label);
+
+			current->insertCode(label_name + "b " + label);
+
 		} else {
 			genCmp(branch, current, label_stat);
 
@@ -579,27 +684,26 @@ private:
 			switch (static_cast<Tok*> (oper)->getOP()) {
 
 			case token::leq:
-				op = "BLE";
+				op = "ble";
 				break;
 			case token::geq:
-				op = "BGE";
+				op = "bge";
 				break;
 			case token::gtr:
-				op = "BGT";
+				op = "bgt";
 				break;
 			case token::lss:
-				op = "BLT";
+				op = "blt";
 				break;
 			case token::eql:
-				op = "BEQ";
+				op = "beq";
 				break;
 			case token::neq:
-				op = "BNQ";
+				op = "bnq";
 				break;
 			}
 
-			cout << op + " " + label << endl;
-			current->insertCode(op + " " + label);
+			current->insertCode(label_name + " " + op + " " + label);
 
 		}
 
@@ -616,6 +720,9 @@ private:
 
 		if (label) {
 			label_name = label->getName() + ": ";
+		}
+		else{
+			label_name = "       ";
 		}
 
 		IRNode* expr = expr = stat->getChildren()->at(0);
@@ -634,16 +741,16 @@ private:
 
 			switch (static_cast<Tok*> (oper)->getOP()) {
 			case token::plus:
-				op = "ADD";
+				op = "add";
 				break;
 			case token::minus:
-				op = "SUB";
+				op = "sub";
 				break;
 			case token::slash:
-				op = "DIV";
+				op = "div";
 				break;
 			case token::times:
-				op = "MUL";
+				op = "mul";
 				break;
 			}
 
@@ -665,7 +772,7 @@ private:
 
 		} else {
 
-			op = "MOV";
+			op = "mov";
 
 			r2 = TermCode(expr, current);
 
@@ -711,6 +818,8 @@ private:
 	std::vector<Symbol*> aux;
 
 	Symbol* mainSym;
+
+	FunctionCode* mainCode;
 
 };
 

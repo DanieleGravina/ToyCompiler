@@ -59,6 +59,10 @@ public:
 		return gen;
 	}
 
+	SymbolTable* getSymTab(){
+		return (*(stats->begin()))->getSymTab();
+	}
+
 	void repr() {
 
 		cout << "BB " << myId << " instr : ";
@@ -137,6 +141,9 @@ public:
 	SymbolTable* parameters(){
 		
 	}
+
+	void insertLoadGlobal();
+	void insertStoreGlobal();
 
 private:
 
@@ -222,8 +229,17 @@ public:
 				cout << (*it2)->getName() << " ";
 			}
 
+
 			cout << endl;
 		}
+
+		cout << "spilled : ";
+
+		for (std::set<Symbol*>::iterator it2 = spilled.begin(); it2 != spilled.end(); ++it2) {
+			cout << (*it2)->getName() << " ";
+		}
+
+		cout << endl;
 
 	}
 

@@ -1,9 +1,9 @@
 /* 
- * File:   ir.h
- * Author: daniele
- *
- * Created on 13 maggio 2014, 15.53
- */
+* File:   ir.h
+* Author: daniele
+*
+* Created on 13 maggio 2014, 15.53
+*/
 
 #ifndef IR_H
 #define	IR_H
@@ -24,58 +24,58 @@ static int id = 0;
 class BaseType {
 public:
 
-    enum basetypes {
-        INT,
-        FLOAT,
-        LABEL,
-        STRUCT,
-        FUNCTION
+	enum basetypes {
+		INT,
+		FLOAT,
+		LABEL,
+		STRUCT,
+		FUNCTION
 
-    };
+	};
 
 private:
-    BaseType();
+	BaseType();
 };
 
 class Type {
 public:
 
-    Type() : name("Null"), size(0), basetype(0) {
-    }
+	Type() : name("Null"), size(0), basetype(0) {
+	}
 
-    Type(string _name, size_t _size, int _basetype)
-    : name(_name), size(_size), basetype(_basetype) {
-    }
+	Type(string _name, size_t _size, int _basetype)
+		: name(_name), size(_size), basetype(_basetype) {
+	}
 
 	virtual ~Type(){
 	}
 
 
 
-    size_t getSize() const {
-        return size;
-    }
+	size_t getSize() const {
+		return size;
+	}
 
-    const string& getName() {
-        return name;
-    }
+	const string& getName() {
+		return name;
+	}
 
 private:
-    string name;
-    size_t size;
-    int basetype;
+	string name;
+	size_t size;
+	int basetype;
 
 };
 
 class ArrayType : public Type {
 public:
 
-    ArrayType() : Type() {
-    }
+	ArrayType() : Type() {
+	}
 
-    ArrayType(string name, size_t size, int basetype) :
-    Type(name, size * 4, basetype) {
-    };
+	ArrayType(string name, size_t size, int basetype) :
+		Type(name, size * 4, basetype) {
+	};
 
 };
 
@@ -85,747 +85,756 @@ static std::map <int, Type*> standard_types;
 class Value {
 public:
 
-    Value(int val) : int_value(val) {
-    }
+	Value(int val) : int_value(val) {
+	}
 
-    int getValue() {
-        return int_value;
-    }
+	int getValue() {
+		return int_value;
+	}
 
 private:
 
-    int int_value;
+	int int_value;
 
 };
 
 class Symbol {
 public:
 
-    Symbol() : stype(NULL), value(0), spilled(false), global(false) {
-    }
+	Symbol() : stype(NULL), value(0), spilled(false), global(false) {
+	}
 
-    Symbol(string _name) : name(_name), stype(NULL), value(0), spilled(false), global(true) {
+	Symbol(string _name) : name(_name), stype(NULL), value(0), spilled(false), global(false) {
 		stype = new Type("INTEGER", 32, BaseType::INT);
-    }
+	}
 
-    Symbol(string _name, Type* _stype, Value _value = NULL)
-    : name(_name), stype(_stype), value(_value), spilled(false), global(false) {
-    }
+	Symbol(string _name, Type* _stype, Value _value = NULL)
+		: name(_name), stype(_stype), value(_value), spilled(false), global(false) {
+	}
 
-    const string& getName() const {
-        return name;
-    }
+	const string& getName() const {
+		return name;
+	}
 
-    const Value& getValue() const {
-        return value;
-    }
+	const Value& getValue() const {
+		return value;
+	}
 
-    Type& getType() const {
-        return *stype;
-    }
+	Type& getType() const {
+		return *stype;
+	}
 
-    void setValue(Value val) {
-        value = val;
-    }
+	void setValue(Value val) {
+		value = val;
+	}
 
-    void setTarget(void* _target) {
-        target = _target;
-    }
+	void setTarget(void* _target) {
+		target = _target;
+	}
 
-    void* getTarget() {
-        return target;
-    }
+	void* getTarget() {
+		return target;
+	}
 
-    void setGlobal() {
-        global = true;
-    }
+	void setGlobal() {
+		global = true;
+	}
 
-    bool isGlobal() {
-        return global;
-    }
+	bool isGlobal() {
+		return global;
+	}
 
-    void spill() {
-        spilled = true;
-    }
+	void spill() {
+		spilled = true;
+	}
 
-    bool isSpilled() {
-        return spilled;
-    }
+	bool isSpilled() {
+		return spilled;
+	}
 
-    ~Symbol() {
-        if (stype)
-            delete stype;
-    }
+	~Symbol() {
+		if (stype)
+			delete stype;
+	}
 
-    static string genUniqueId() {
+	static string genUniqueId() {
 
-        static int ids = 0;
+		static int ids = 0;
 
-        string name; // string which will contain the result
+		string name; // string which will contain the result
 
-        ostringstream convert; // stream used for the conversion
+		ostringstream convert; // stream used for the conversion
 
-        convert << "Temp" << ++ids;
+		convert << "Temp" << ++ids;
 
-        name = convert.str();
+		name = convert.str();
 
-        return name;
+		return name;
 
-    }
+	}
 
 private:
-    bool spilled;
-    bool global;
-    const string name;
-    Type* stype;
-    Value value;
-    void* target;
+	bool spilled;
+	bool global;
+	const string name;
+	Type* stype;
+	Value value;
+	void* target;
 };
 
 class SymbolTable {
 public:
 
-    SymbolTable(SymbolTable* lhs = NULL, SymbolTable* rhs = NULL) {
+	SymbolTable(SymbolTable* lhs = NULL, SymbolTable* rhs = NULL) {
 
-        if (lhs != NULL && rhs != NULL) {
+		if (lhs != NULL && rhs != NULL) {
 
-            for (SymbolTable::iterator it = lhs->begin(); it != lhs->end(); ++it) {
-                table[it->first] = it->second;
-            }
+			for (SymbolTable::iterator it = lhs->begin(); it != lhs->end(); ++it) {
+				table[it->first] = it->second;
+			}
 
-            for (SymbolTable::iterator it = rhs->begin(); it != rhs->end(); ++it) {
-                table[it->first] = it->second;
-            }
-        }
+			for (SymbolTable::iterator it = rhs->begin(); it != rhs->end(); ++it) {
+				table[it->first] = it->second;
+			}
+		}
 
-    }
+	}
 
-    ~SymbolTable() {
-        for (std::map<std::string, Symbol*>::iterator it = table.begin(); it != table.end(); ++it) {
-            delete it->second;
-        }
-    }
+	~SymbolTable() {
+		for (std::map<std::string, Symbol*>::iterator it = table.begin(); it != table.end(); ++it) {
+			delete it->second;
+		}
+	}
 
-    /**
-     * find the element in the Symbol Table
-     * if not found return null
-     * if double return second element
-     * @param symbol_name
-     * @return 
-     */
-    Symbol* find(std::string symbol_name) {
-        if (table.find(symbol_name) != table.end())
-            return table[symbol_name];
-        else {
-            cout << "Error: symbol " << symbol_name << " not found" << endl;
-            return NULL;
-        }
-    }
+	/**
+	* find the element in the Symbol Table
+	* if not found return null
+	* if double return second element
+	* @param symbol_name
+	* @return 
+	*/
+	Symbol* find(std::string symbol_name) {
+		if (table.find(symbol_name) != table.end())
+			return table[symbol_name];
+		else {
+			//cout << "Error: symbol " << symbol_name << " not found" << endl;
+			return NULL;
+		}
+	}
 
-    void exclude() {
+	void exclude() {
 
-    }
+	}
 
-    void append(Symbol *symbol) {
-        table[symbol->getName()] = symbol;
-    }
+	void append(Symbol *symbol) {
+		table[symbol->getName()] = symbol;
+	}
 
-    typedef std::map<std::string, Symbol*>::iterator iterator;
+	typedef std::map<std::string, Symbol*>::iterator iterator;
 
-    iterator begin() {
-        return table.begin();
-    }
+	iterator begin() {
+		return table.begin();
+	}
 
-    iterator end() {
-        return table.end();
-    }
+	iterator end() {
+		return table.end();
+	}
 
 
 private:
-    std::map<std::string, Symbol*> table;
+	std::map<std::string, Symbol*> table;
 };
 
 class LabelType : public Type {
 public:
 
-    LabelType() : Type("Label", 0, BaseType::LABEL) {
-    };
+	LabelType() : Type("Label", 0, BaseType::LABEL) {
+	};
 
-    Symbol* Label(void* target = NULL) {
+	Symbol* Label(void* target = NULL) {
 
-        Symbol* sym;
+		Symbol* sym;
 
-        static int ids = 0;
+		static int ids = 0;
 
-        string name; // string which will contain the result
+		string name; // string which will contain the result
 
-        ostringstream convert; // stream used for the conversion
+		ostringstream convert; // stream used for the conversion
 
-        convert << "label" << ++ids;
+		convert << "label" << ++ids;
 
-        name = convert.str();
+		name = convert.str();
 
-        sym = new Symbol(name, this);
+		sym = new Symbol(name, this);
 
-        sym->setTarget(target);
+		sym->setTarget(target);
 
-        return sym;
-    }
+		return sym;
+	}
 };
 
 class FunctionType : public Type {
 public:
 
-    FunctionType() : Type("Function", 0, BaseType::FUNCTION) {
-    };
+	FunctionType() : Type("Function", 0, BaseType::FUNCTION) {
+	};
 };
 
 class IRNode {
 public:
 
-    IRNode(IRNode* _parent = NULL, vector<IRNode*>* _children = NULL, SymbolTable* _symtab = NULL) :
-    parent(_parent), children(_children), symtab(_symtab) {
-        myId = ++id;
-    }
+	IRNode(IRNode* _parent = NULL, vector<IRNode*>* _children = NULL, SymbolTable* _symtab = NULL) :
+		parent(_parent), children(_children), symtab(_symtab) {
+			myId = ++id;
+	}
 
-    virtual ~IRNode() {
+	virtual ~IRNode() {
 
-        for (vector<IRNode*>::iterator it = children->begin(); it != children->end(); ++it) {
-            delete *it;
-        }
+		for (vector<IRNode*>::iterator it = children->begin(); it != children->end(); ++it) {
+			delete *it;
+		}
 
-        delete children;
-        delete parent;
+		delete children;
+		delete parent;
 
-        for (vector<IRNode*>::iterator it = delete_list.begin(); it != delete_list.end(); ++it)
-            delete *it;
+		for (vector<IRNode*>::iterator it = delete_list.begin(); it != delete_list.end(); ++it)
+			delete *it;
 
-    }
+	}
 
-    /**
-     * return node parent, if not exists, return null
-     * @return *IRNode
-     */
-    IRNode* getParent() {
-        return parent;
-    }
+	/**
+	* return node parent, if not exists, return null
+	* @return *IRNode
+	*/
+	IRNode* getParent() {
+		return parent;
+	}
 
-    void setParent(IRNode* par) {
-        parent = par;
-    }
+	void setParent(IRNode* par) {
+		parent = par;
+	}
 
-    bool hasChildren() {
-        return (children != NULL);
-    }
+	bool hasChildren() {
+		return (children != NULL);
+	}
 
-    void addChildren(IRNode* node) {
-        if (!hasChildren()) {
-            children = new vector<IRNode*>();
-        }
+	void addChildren(IRNode* node) {
+		if (!hasChildren()) {
+			children = new vector<IRNode*>();
+		}
 
-        children->push_back(node);
-    }
+		children->push_back(node);
+	}
 
-    vector<IRNode*>* getChildren() const {
-        return children;
-    }
+	void insertChildren(IRNode* node, IRNode* to_insert){
+		std::vector<IRNode*>::iterator it = children->begin();
 
-    void setChildren(vector<IRNode*>* child) {
-        if (hasChildren()) {
-            delete children;
-        }
-        children = child;
-    }
+		while(*it != node){
+			it++;
+		}
 
-    SymbolTable* getSymTab() {
-        return symtab;
-    }
+		children->insert(it, to_insert);
 
-    /**
-     * return uses, if not implemented return NULL
-     */
-    virtual std::list<Symbol*>& get_uses() {
-        return uses;
-    }
+	}
 
-    virtual void replace_uses(Symbol* old, Symbol *sym) {
-        if (hasChildren()) {
-            for (vector<IRNode*>::size_type i = 0; i < children->size(); ++i) {
-                (children->at(i))->replace_uses(old, sym);
-            }
-            uses.clear();
+	vector<IRNode*>* getChildren() const {
+		return children;
+	}
 
-            for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
-                uses.merge((getChildren()->at(i)->get_uses()));
-                if(old->isGlobal())
-                    uses.push_back(getSymTab()->find("zero"));
-            }
-        }
-    }
+	void setChildren(vector<IRNode*>* child) {
+		if (hasChildren()) {
+			delete children;
+		}
+		children = child;
+	}
 
-    void repr(int space = 0);
+	SymbolTable* getSymTab() {
+		return symtab;
+	}
 
-    virtual void lower() {
-    }
+	/**
+	* return uses, if not implemented return NULL
+	*/
+	virtual std::list<Symbol*>& get_uses() {
+		return uses;
+	}
 
-    virtual void flatten() {
+	virtual void replace_uses(Symbol* old, Symbol *sym) {
+		if (hasChildren()) {
+			for (vector<IRNode*>::size_type i = 0; i < children->size(); ++i) {
+				(children->at(i))->replace_uses(old, sym);
+			}
+			uses.clear();
 
-    }
+			for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
+				uses.merge((getChildren()->at(i)->get_uses()));
+				if(old->isGlobal())
+					uses.push_back(getSymTab()->find("zero"));
+			}
+		}
+	}
 
-    void lowering() {
+	void repr(int space = 0);
 
-        if (hasChildren()) {
+	virtual void lower() {
+	}
 
-            for (vector<IRNode*>::size_type i = 0; i < children->size(); ++i) {
-                (children->at(i))->lowering();
-            }
-        }
+	virtual void flatten() {
 
-        lower();
-    }
+	}
 
-    void flattening() {
-        if (hasChildren()) {
+	void lowering() {
 
-            for (vector<IRNode*>::size_type i = 0; i < children->size(); ++i) {
-                (children->at(i))->flattening();
-            }
-        }
+		if (hasChildren()) {
 
-        flatten();
-    }
+			for (vector<IRNode*>::size_type i = 0; i < children->size(); ++i) {
+				(children->at(i))->lowering();
+			}
+		}
 
-    void getStatLists(list<IRNode*>& statlists) {
+		lower();
+	}
 
-        if (hasChildren()) {
+	void flattening() {
+		if (hasChildren()) {
 
-            for (vector<IRNode*>::size_type i = 0; i < children->size(); ++i) {
-                (children->at(i))->getStatLists(statlists);
-            }
-        }
+			for (vector<IRNode*>::size_type i = 0; i < children->size(); ++i) {
+				(children->at(i))->flattening();
+			}
+		}
 
-        if (NodeType() == "StatList")
-            statlists.push_back(this);
-    }
+		flatten();
+	}
 
-    /**
-     * Replace with elimination
-     * @param old_node
-     * @param new_node
-     */
-    void replace(IRNode* old_node, IRNode* new_node);
+	void getStatLists(list<IRNode*>& statlists) {
 
-    /**
-     * Replace without elimination
-     * @param old_node
-     * @param new_node
-     */
-    void substitute(IRNode* old_node, IRNode* new_node);
+		if (hasChildren()) {
 
-    virtual const string& NodeType() {
-        static string s = "IRNode";
+			for (vector<IRNode*>::size_type i = 0; i < children->size(); ++i) {
+				(children->at(i))->getStatLists(statlists);
+			}
+		}
 
-        return s;
-    }
+		if (NodeType() == "StatList")
+			statlists.push_back(this);
+	}
 
-    int Id() const {
-        return myId;
-    }
+	/**
+	* Replace with elimination
+	* @param old_node
+	* @param new_node
+	*/
+	void replace(IRNode* old_node, IRNode* new_node);
 
-    virtual void lower_expr(std::list<IRNode*>* stack) {
-    }
+	/**
+	* Replace without elimination
+	* @param old_node
+	* @param new_node
+	*/
+	void substitute(IRNode* old_node, IRNode* new_node);
+
+	virtual const string& NodeType() {
+		static string s = "IRNode";
+
+		return s;
+	}
+
+	int Id() const {
+		return myId;
+	}
+
+	virtual void lower_expr(std::list<IRNode*>* stack) {
+	}
 
 private:
-    int myId;
-    IRNode* parent;
-    vector<IRNode*>* children;
-    vector<IRNode*> delete_list;
-    SymbolTable* symtab;
-    std::list<Symbol*> uses;
+	int myId;
+	IRNode* parent;
+	vector<IRNode*>* children;
+	vector<IRNode*> delete_list;
+	SymbolTable* symtab;
+	std::list<Symbol*> uses;
 
 };
 
 class Var : public IRNode {
 public:
 
-    Var(Symbol* _symbol, SymbolTable* symtab) : symbol(_symbol), IRNode(NULL, NULL, symtab) {
+	Var(Symbol* _symbol, SymbolTable* symtab) : symbol(_symbol), IRNode(NULL, NULL, symtab) {
 
-    }
+	}
 
-    virtual std::list<Symbol*>& get_uses() {
-        if (!IRNode::get_uses().size())
-            IRNode::get_uses().push_back(symbol);
+	virtual std::list<Symbol*>& get_uses() {
+		if (!IRNode::get_uses().size())
+			IRNode::get_uses().push_back(symbol);
 
-        return IRNode::get_uses();
-    }
+		return IRNode::get_uses();
+	}
 
-    virtual void replace_uses(Symbol *old, Symbol* sym) {
-        if (symbol == old) {
-            symbol = sym;
-            IRNode::get_uses().clear();
-            IRNode::get_uses().push_back(symbol);
-        }
-    }
+	virtual void replace_uses(Symbol *old, Symbol* sym) {
+		if (symbol == old) {
+			symbol = sym;
+			IRNode::get_uses().clear();
+			IRNode::get_uses().push_back(symbol);
+		}
+	}
 
-    virtual const string& NodeType() {
-        static string s = "Var";
+	virtual const string& NodeType() {
+		static string s = "Var";
 
-        return s;
-    }
+		return s;
+	}
 
-    Symbol* getSymbol() {
-        return symbol;
-    }
+	Symbol* getSymbol() {
+		return symbol;
+	}
 
 private:
-    Symbol* symbol;
+	Symbol* symbol;
 };
 
 class Const : public IRNode {
 public:
 
-    Const(Value _value, SymbolTable* symtab) : value(_value), IRNode(NULL, NULL, symtab) {
-    };
+	Const(Value _value, SymbolTable* symtab) : value(_value), IRNode(NULL, NULL, symtab) {
+	};
 
-    virtual const string& NodeType() {
-        static string s = "Const";
+	virtual const string& NodeType() {
+		static string s = "Const";
 
-        return s;
-    }
+		return s;
+	}
 
-    Value& getValue() {
-        return value;
-    }
+	virtual std::list<Symbol*>& get_uses() {
+
+		return IRNode::get_uses();
+	}
+
+	Value& getValue() {
+		return value;
+	}
 private:
-    Value value;
+	Value value;
 };
 
 class ArrayVar : public IRNode {
 public:
 
-    ArrayVar(Symbol* _symbol, IRNode* index, SymbolTable* symtab) :
-    symbol(_symbol), IRNode(NULL, NULL, symtab) {
+	ArrayVar(Symbol* _symbol, IRNode* index, SymbolTable* symtab) :
+		symbol(_symbol), IRNode(NULL, NULL, symtab) {
 
-        index->setParent(this);
-        vector<IRNode*>* children = new vector<IRNode*>();
-        children->push_back(index);
-        setChildren(children);
-    }
+			index->setParent(this);
+			vector<IRNode*>* children = new vector<IRNode*>();
+			children->push_back(index);
+			setChildren(children);
+	}
 
-    virtual std::list<Symbol*>& get_uses() {
+	virtual std::list<Symbol*>& get_uses() {
 
-        if (hasChildren() && !IRNode::get_uses().size()) {
+		if (hasChildren() && !IRNode::get_uses().size()) {
 
-            for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
-                IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
-            }
+			for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
+				IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
+			}
 
-            IRNode::get_uses().push_back(symbol);
+			IRNode::get_uses().push_back(symbol);
 
-        }
+		}
 
-        return IRNode::get_uses();
-    }
+		return IRNode::get_uses();
+	}
 
-    virtual void replace_uses(Symbol *old, Symbol* sym) {
-        if (symbol == old) {
-            symbol = sym;
-        }
-        IRNode::get_uses().clear();
+	virtual void replace_uses(Symbol *old, Symbol* sym) {
+		if (symbol == old) {
+			symbol = sym;
+		}
+		IRNode::get_uses().clear();
 
-        if (hasChildren())
-            for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
-                getChildren()->at(i)->replace_uses(old, sym);
-                IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
-            }
-        IRNode::get_uses().push_back(symbol);
+		if (hasChildren())
+			for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
+				getChildren()->at(i)->replace_uses(old, sym);
+				IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
+			}
+			IRNode::get_uses().push_back(symbol);
 
-    }
+	}
 
-    virtual const string& NodeType() {
-        static string s = "ArrayVar";
+	virtual const string& NodeType() {
+		static string s = "ArrayVar";
 
-        return s;
-    }
+		return s;
+	}
 
-    virtual void lower() {
-        /*Symbol* index = new Symbol(Symbol::genUniqueId());
-        Symbol* result = new Symbol(Symbol::genUniqueId());
-        getSymTab()->append(index);
-        getSymTab()->append(result);
-
-        std::vector<IRNode*>* children = new std::vector<IRNode*>();
-        children->push_back(new Tok(token::times, getSymTab()));
-        children->push_back(new Var(index, getSymTab()));
-        children->push_back(new Var(index, getSymTab()));
-
-        IRNode* assign = new AssignStat(index, getChildren()->at(0), getSymTab());
-
-        IRNode* mul = new BinExpr(token::times, children , getSymTab());
-
-        IRNode* load = new LoadStat(result, mul, getSymTab());*/
-    }
+	virtual void lower();
 
 private:
-    Symbol* symbol;
+	Symbol* symbol;
 };
 
 class Tok : public IRNode {
 public:
 
-    Tok(int _tok, SymbolTable* symtab) : tok(_tok), IRNode(NULL, NULL, symtab) {
-    }
+	Tok(int _tok, SymbolTable* symtab) : tok(_tok), IRNode(NULL, NULL, symtab) {
+	}
 
-    int getOP() {
-        return tok;
-    }
+	int getOP() {
+		return tok;
+	}
 
-    virtual const string& NodeType() {
-        static string s = "Tok";
+	virtual const string& NodeType() {
+		static string s = "Tok";
 
-        return s;
-    }
+		return s;
+	}
 
 private:
-    int tok;
+	int tok;
 
 };
 
 class Expr : public IRNode {
 public:
 
-    Expr(int _op, SymbolTable* symtab)
-    : IRNode(NULL, NULL, symtab), op(_op, symtab) {
-    }
+	Expr(int _op, SymbolTable* symtab)
+		: IRNode(NULL, NULL, symtab), op(_op, symtab) {
+	}
 
-    IRNode* getOperator() const {
-        return getChildren()->at(0);
-    }
+	IRNode* getOperator() const {
+		return getChildren()->at(0);
+	}
 
-    virtual std::list<Symbol*>& get_uses() {
+	virtual std::list<Symbol*>& get_uses() {
 
-        if (hasChildren() && !IRNode::get_uses().size()) {
+		if (hasChildren() && !IRNode::get_uses().size()) {
 
-            for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
-                IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
-            }
-        }
+			for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
+				IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
+			}
+		}
 
-        return IRNode::get_uses();
-    }
+		return IRNode::get_uses();
+	}
 
-    virtual void replace_uses(Symbol *old, Symbol *sym) {
+	virtual void replace_uses(Symbol *old, Symbol *sym) {
 
-        IRNode::get_uses().clear();
+		IRNode::get_uses().clear();
 
-        if (hasChildren()) {
+		if (hasChildren()) {
 
-            for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
-                getChildren()->at(i)->replace_uses(old, sym);
-                IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
-            }
-        }
-    }
+			for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
+				getChildren()->at(i)->replace_uses(old, sym);
+				IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
+			}
+		}
+	}
 
-    virtual const string& NodeType() {
-        static string s = "Expr";
+	virtual const string& NodeType() {
+		static string s = "Expr";
 
-        return s;
-    }
+		return s;
+	}
 
-    virtual void lower_expr(std::list<IRNode*>* stack) {
-    }
+	virtual void lower_expr(std::list<IRNode*>* stack) {
+	}
 
 private:
-    Tok op;
+	Tok op;
 
 };
 
 class Stat : public IRNode {
 public:
 
-    Stat(SymbolTable* symtab) :
-    IRNode(NULL, NULL, symtab), label(NULL) {
-    }
+	Stat(SymbolTable* symtab) :
+		IRNode(NULL, NULL, symtab), label(NULL) {
+	}
 
-    void setLabel(Symbol* _label) {
-        label = _label;
-        label->setTarget(this);
-    }
+	void setLabel(Symbol* _label) {
+		label = _label;
+		label->setTarget(this);
+	}
 
-    Symbol* getLabel() {
-        return label;
-    }
+	Symbol* getLabel() {
+		return label;
+	}
 
-    virtual Symbol* getSymbol() {
-        return NULL;
-    }
+	virtual Symbol* getSymbol() {
+		return NULL;
+	}
 
-    /**
-     *return null if global
-     *@return *IRNode
-     */
-    IRNode* getFunction() {
-        if (getParent()) {
-            if (getParent()->NodeType() == "FunctionDef")
-                return getParent();
-            else
-                return static_cast<Stat*> (getParent())->getFunction();
-        } else {
-            return NULL;
-        }
-    }
+	/**
+	*return null if global
+	*@return *IRNode
+	*/
+	IRNode* getFunction() {
+		if (getParent()) {
+			if (getParent()->NodeType() == "FunctionDef")
+				return getParent();
+			else
+				return static_cast<Stat*> (getParent())->getFunction();
+		} else {
+			return NULL;
+		}
+	}
 
-    virtual ~Stat() {
-        if (label)
-            delete label;
-    }
+	virtual ~Stat() {
+		if (label)
+			delete label;
+	}
 
-    virtual void lower_expr(std::list<IRNode*>* stack) {
+	virtual void lower_expr(std::list<IRNode*>* stack) {
 
-    }
+	}
 
-    virtual const string& NodeType() {
-        static string s = "Stat";
+	virtual const string& NodeType() {
+		static string s = "Stat";
 
-        return s;
-    }
+		return s;
+	}
 
 private:
-    Symbol* label;
+	Symbol* label;
 };
 
 class AssignStat : public Stat {
 public:
 
-    AssignStat(Symbol* _sym, IRNode* expr, SymbolTable* symtab)
-    : Stat(symtab), sym(_sym) {
+	AssignStat(Symbol* _sym, IRNode* expr, SymbolTable* symtab)
+		: Stat(symtab), sym(_sym) {
 
-        expr->setParent(this);
+			expr->setParent(this);
 
-        vector<IRNode*> *children = new vector<IRNode*>();
-        children->push_back(expr);
+			vector<IRNode*> *children = new vector<IRNode*>();
+			children->push_back(expr);
 
-        setChildren(children);
-    }
+			setChildren(children);
+	}
 
-    virtual std::list<Symbol*>& get_uses() {
+	virtual std::list<Symbol*>& get_uses() {
 
-        if (hasChildren() && !IRNode::get_uses().size()) {
+		if (hasChildren() && !IRNode::get_uses().size()) {
 
-            for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
-                IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
-            }
-        }
+			for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
+				IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
+			}
+		}
 
-        return IRNode::get_uses();
-    }
+		return IRNode::get_uses();
+	}
 
-    virtual Symbol* getSymbol() {
-        return sym;
-    }
+	virtual Symbol* getSymbol() {
+		return sym;
+	}
 
-    void setSymbol(Symbol* _sym) {
-        sym = _sym;
-    }
+	void setSymbol(Symbol* _sym) {
+		sym = _sym;
+	}
 
-    virtual const string& NodeType() {
-        static string s = "AssignStat";
+	virtual const string& NodeType() {
+		static string s = "AssignStat";
 
-        return s;
-    }
+		return s;
+	}
 
-    virtual void lower_expr(std::list<IRNode*>* stack) {
+	virtual void lower_expr(std::list<IRNode*>* stack) {
 
-        if (hasChildren()) {
+		if (hasChildren()) {
 
-            for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
-                getChildren()->at(i)->lower_expr(stack);
-            }
-        }
-    }
+			for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
+				getChildren()->at(i)->lower_expr(stack);
+			}
+		}
+	}
 
 private:
-    Symbol* sym;
+	Symbol* sym;
 };
 
 class BinExpr : public Expr {
 public:
 
-    BinExpr(int _op, vector<IRNode*>* children, SymbolTable* symtab) :
-    Expr(_op, symtab) {
+	BinExpr(int _op, vector<IRNode*>* children, SymbolTable* symtab) :
+		Expr(_op, symtab) {
 
-        for (vector<IRNode*>::size_type i = 0; i < children->size(); ++i)
-            children->at(i)->setParent(this);
+			for (vector<IRNode*>::size_type i = 0; i < children->size(); ++i)
+				children->at(i)->setParent(this);
 
-        setChildren(children);
+			setChildren(children);
 
-    }
+	}
 
-    virtual const string& NodeType() {
-        static string s = "BinExpr";
+	virtual const string& NodeType() {
+		static string s = "BinExpr";
 
-        return s;
-    }
+		return s;
+	}
 
-    virtual void lower_expr(std::list<IRNode*>* stack);
+	virtual void lower_expr(std::list<IRNode*>* stack);
 
-    void lowerBinExpr(std::list<IRNode*>* stack);
+	void lowerBinExpr(std::list<IRNode*>* stack);
 
 };
 
 class UnExpr : public Expr {
 public:
 
-    UnExpr(int tok, IRNode* expr, SymbolTable* symtab) : Expr(tok, symtab) {
-        Tok* tok_node = new Tok(tok, symtab);
+	UnExpr(int tok, IRNode* expr, SymbolTable* symtab) : Expr(tok, symtab) {
+		Tok* tok_node = new Tok(tok, symtab);
 
-        tok_node->setParent(this);
-        expr->setParent(this);
+		tok_node->setParent(this);
+		expr->setParent(this);
 
-        vector<IRNode*>* children = new vector<IRNode*>();
-        children->push_back(tok_node);
-        children->push_back(expr);
+		vector<IRNode*>* children = new vector<IRNode*>();
+		children->push_back(tok_node);
+		children->push_back(expr);
 
-        setChildren(children);
-    }
+		setChildren(children);
+	}
 
-    virtual const string& NodeType() {
-        static string s = "UnExpr";
+	virtual const string& NodeType() {
+		static string s = "UnExpr";
 
-        return s;
-    }
+		return s;
+	}
 
-    virtual void lower_expr(std::list<IRNode*>* stack);
+	virtual void lower_expr(std::list<IRNode*>* stack);
 
-    void lowerUnExpr(std::list<IRNode*>* stack);
+	void lowerUnExpr(std::list<IRNode*>* stack);
 
 };
 
 class CallExpr : public Expr {
 public:
 
-    CallExpr(Symbol* sym, int op, vector<IRNode*>* parameters, SymbolTable* symtab) :
-    Expr(op, symtab), function(sym) {
-        for (vector<IRNode*>::size_type i = 0; i < parameters->size(); ++i)
-            parameters->at(i)->setParent(this);
+	CallExpr(Symbol* sym, int op, vector<IRNode*>* parameters, SymbolTable* symtab) :
+		Expr(op, symtab), function(sym) {
+			for (vector<IRNode*>::size_type i = 0; i < parameters->size(); ++i)
+				parameters->at(i)->setParent(this);
 
-        setChildren(parameters);
-    }
+			setChildren(parameters);
+	}
 
-    virtual const string& NodeType() {
-        static string s = "CallExpr";
+	virtual const string& NodeType() {
+		static string s = "CallExpr";
 
-        return s;
-    }
+		return s;
+	}
 
-    virtual Symbol* getSymbol() {
-        return function;
-    }
+	virtual std::list<Symbol*>& get_uses() {
+
+		if (!IRNode::get_uses().size()) {
+			IRNode::get_uses().merge(getChildren()->at(0)->get_uses());
+		}
+
+		return IRNode::get_uses();
+	}
+
+	virtual Symbol* getSymbol() {
+		return function;
+	}
 
 private:
 
-    Symbol* function;
+	Symbol* function;
 
 
 };
@@ -834,628 +843,656 @@ class LoadStat : public Stat {
 public:
 
 	LoadStat(Symbol* _sym, IRNode* _expr1, IRNode* _expr2, SymbolTable* symtab) :
-    Stat(symtab) {
-        _expr1->setParent(this);
-		_expr2->setParent(this);
-        vector<IRNode*>* children = new vector<IRNode*>();
-        children->push_back(_expr1);
-		children->push_back(_expr2);
-        setChildren(children);
-        sym = _sym;
-    }
+		Stat(symtab), is_initial(false) {
+			_expr1->setParent(this);
+			_expr2->setParent(this);
+			vector<IRNode*>* children = new vector<IRNode*>();
+			children->push_back(_expr1);
+			children->push_back(_expr2);
+			setChildren(children);
+			sym = _sym;
+	}
 
-    virtual const string& NodeType() {
-        static string s = "Load";
+	void setInitial(){
+		is_initial = true;
+	}
 
-        return s;
-    }
+	bool isInitial() const{
+		return is_initial;
+	}
 
-    virtual void lower_expr(std::list<IRNode*>* stack) {
+	virtual const string& NodeType() {
+		static string s = "Load";
 
-        if (hasChildren()) {
+		return s;
+	}
 
-            for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
-                getChildren()->at(i)->lower_expr(stack);
-            }
-        }
-    }
+	virtual void lower_expr(std::list<IRNode*>* stack) {
 
-    virtual Symbol* getSymbol() {
-        return sym;
-    }
+		if (hasChildren()) {
 
-    virtual std::list<Symbol*>& get_uses() {
-        return IRNode::get_uses();
-    }
+			for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
+				getChildren()->at(i)->lower_expr(stack);
+			}
+		}
+	}
+
+	virtual Symbol* getSymbol() {
+		return sym;
+	}
+
+	virtual std::list<Symbol*>& get_uses() {
+		if (!IRNode::get_uses().size()){
+			IRNode::get_uses().merge(getChildren()->at(0)->get_uses());
+		}
+		return IRNode::get_uses();
+	}
 
 private:
-    Symbol* sym;
+	Symbol* sym;
+	bool is_initial;
 };
 
 class StoreStat : public Stat {
 public:
 
 	StoreStat(Symbol* _sym, IRNode* expr_1, IRNode* expr_2, SymbolTable* symtab) :
-    sym(_sym), Stat(symtab) {
-        expr_1->setParent(this);
-		expr_2->setParent(this);
-        vector<IRNode*>* children = new vector<IRNode*>();
-        children->push_back(expr_1);
-		children->push_back(expr_2);
-        setChildren(children);
-    }
+		sym(_sym), Stat(symtab), is_final(false) {
+			expr_1->setParent(this);
+			expr_2->setParent(this);
+			vector<IRNode*>* children = new vector<IRNode*>();
+			children->push_back(expr_1);
+			children->push_back(expr_2);
+			setChildren(children);
+	}
 
-    virtual std::list<Symbol*>& get_uses() {
-        if (!IRNode::get_uses().size())
-            IRNode::get_uses().merge(getChildren()->at(0)->get_uses());
-        return IRNode::get_uses();
-    }
+	void setFinal(){
+		is_final = true;
+	}
 
-    virtual Symbol* getSymbol() {
-        return sym;
-    }
+	bool isFinal() const{
+		return is_final;
+	}
 
-    virtual const string& NodeType() {
-        static string s = "StoreStat";
+	virtual std::list<Symbol*>& get_uses() {
+		if (!IRNode::get_uses().size()){
+			IRNode::get_uses().merge(getChildren()->at(0)->get_uses());
+			IRNode::get_uses().push_back(sym);
+		}
+		return IRNode::get_uses();
+	}
 
-        return s;
-    }
+	virtual Symbol* getSymbol() {
+		return sym;
+	}
 
-    virtual void lower_expr(std::list<IRNode*>* stack) {
+	virtual const string& NodeType() {
+		static string s = "StoreStat";
 
-        if (hasChildren()) {
+		return s;
+	}
 
-            for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
-                getChildren()->at(i)->lower_expr(stack);
-            }
-        }
-    }
+	virtual void lower_expr(std::list<IRNode*>* stack) {
+
+		if (hasChildren()) {
+
+			for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
+				getChildren()->at(i)->lower_expr(stack);
+			}
+		}
+	}
 
 private:
-    Symbol* sym;
+	Symbol* sym;
+	bool is_final;
 };
 
 class BranchStat : public Stat {
 public:
 
-    BranchStat(IRNode* _expr, Symbol* _exit, SymbolTable* symtab) :
-    exit(_exit), Stat(symtab) {
-        _expr->setParent(this);
-        vector<IRNode*>* children = new vector<IRNode*>();
-        children->push_back(_expr);
-        setChildren(children);
+	BranchStat(IRNode* _expr, Symbol* _exit, SymbolTable* symtab) :
+		exit(_exit), Stat(symtab) {
+			_expr->setParent(this);
+			vector<IRNode*>* children = new vector<IRNode*>();
+			children->push_back(_expr);
+			setChildren(children);
 
-    }
+	}
 
-    virtual std::list<Symbol*>& get_uses() {
+	virtual std::list<Symbol*>& get_uses() {
 
-        if (hasChildren() && !IRNode::get_uses().size()) {
+		if (hasChildren() && !IRNode::get_uses().size()) {
 
-            for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
-                IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
-            }
-        }
+			for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
+				IRNode::get_uses().merge((getChildren()->at(i)->get_uses()));
+			}
+		}
 
-        return IRNode::get_uses();
-    }
+		return IRNode::get_uses();
+	}
 
-    virtual const string& NodeType() {
-        static string s = "Branch";
+	virtual const string& NodeType() {
+		static string s = "Branch";
 
-        return s;
-    }
+		return s;
+	}
 
-    virtual Symbol* getSymbol() {
-        return exit;
-    }
+	virtual Symbol* getSymbol() {
+		return exit;
+	}
 
-    bool isUnconditional() {
-        if (getChildren()->at(0)->NodeType() == "Const") {
-            return true;
-        }
+	bool isUnconditional() {
+		if (getChildren()->at(0)->NodeType() == "Const") {
+			return true;
+		}
 
-        return false;
-    }
+		return false;
+	}
 
-    virtual void lower_expr(std::list<IRNode*>* stack) {
+	virtual void lower_expr(std::list<IRNode*>* stack) {
 
-        if (hasChildren()) {
+		if (hasChildren()) {
 
-            for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
-                getChildren()->at(i)->lower_expr(stack);
-            }
-        }
-    }
+			for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
+				getChildren()->at(i)->lower_expr(stack);
+			}
+		}
+	}
 
 private:
 
-    Symbol* exit;
+	Symbol* exit;
 };
 
 class StatList : public Stat {
 public:
 
-    StatList(SymbolTable* symtab)
-    : Stat(symtab) {
+	StatList(SymbolTable* symtab)
+		: Stat(symtab) {
 
-        cout << "StatList new " << Id() << endl;
-    }
+			cout << "StatList new " << Id() << endl;
+	}
 
-    void append(IRNode* stat) {
+	void append(IRNode* stat) {
 
-        stat->setParent(this);
+		stat->setParent(this);
 
-        cout << "Append stat " << stat->Id() << " to " << Id() << endl;
+		cout << "Append stat " << stat->Id() << " to " << Id() << endl;
 
-        addChildren(stat);
-    }
+		addChildren(stat);
+	}
 
-    /**
-     * Makes one statlist from  nested statlists
-     */
-    virtual void flatten() {
-        //TODO review the code
-        if (getParent()->NodeType() == "StatList") {
-            cout << "flattening of StatList " << Id() << "in " << getParent()->Id() << endl;
+	/**
+	* Makes one statlist from  nested statlists
+	*/
+	virtual void flatten() {
+		//TODO review the code
+		if (getParent()->NodeType() == "StatList") {
+			cout << "flattening of StatList " << Id() << "in " << getParent()->Id() << endl;
 
-            printContent();
-            static_cast<StatList*> (getParent())->printContent();
+			printContent();
+			static_cast<StatList*> (getParent())->printContent();
 
-            if (getLabel()) {
-                static_cast<Stat*> (getChildren()->at(0))->setLabel(getLabel()); //??delete
-            }
+			if (getLabel()) {
+				static_cast<Stat*> (getChildren()->at(0))->setLabel(getLabel()); //??delete
+			}
 
-            for (vector<IRNode*>::size_type i = 1; i < getChildren()->size(); ++i) {
-                getChildren()->at(i)->setParent(getParent());
-            }
+			for (vector<IRNode*>::size_type i = 1; i < getChildren()->size(); ++i) {
+				getChildren()->at(i)->setParent(getParent());
+			}
 
-            vector<IRNode*>* childrenParent = getParent()->getChildren();
+			vector<IRNode*>* childrenParent = getParent()->getChildren();
 
-            vector<IRNode*>::iterator it = childrenParent->begin();
-            vector<IRNode*>::iterator it2 = getChildren()->begin();
+			vector<IRNode*>::iterator it = childrenParent->begin();
+			vector<IRNode*>::iterator it2 = getChildren()->begin();
 
-            while (*it != this) {
-                it++;
-            }
+			while (*it != this) {
+				it++;
+			}
 
-            it++;
-            it2++;
+			it++;
+			it2++;
 
-            for (; it2 != getChildren()->end(); ++it, ++it2) {
-                childrenParent->insert(it, *it2);
-                it = childrenParent->begin();
-                while (*it != *it2) {
-                    it++;
-                }
-            }
+			for (; it2 != getChildren()->end(); ++it, ++it2) {
+				childrenParent->insert(it, *it2);
+				it = childrenParent->begin();
+				while (*it != *it2) {
+					it++;
+				}
+			}
 
-            getParent()->replace(this, getChildren()->at(0));
+			getParent()->replace(this, getChildren()->at(0));
 
 
-            static_cast<StatList*> (getParent())->printContent();
-        }
-    }
+			static_cast<StatList*> (getParent())->printContent();
+		}
+	}
 
-    void printContent() {
-        if (hasChildren()) {
+	void printContent() {
+		if (hasChildren()) {
 
-            cout << "StatList " << Id() << ": ";
+			cout << "StatList " << Id() << ": ";
 
-            cout << "[";
+			cout << "[";
 
-            for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
-                cout << getChildren()->at(i)->Id() << " ";
-            }
+			for (vector<IRNode*>::size_type i = 0; i < getChildren()->size(); ++i) {
+				cout << getChildren()->at(i)->Id() << " ";
+			}
 
-            cout << "]" << endl;
-        }
-    }
+			cout << "]" << endl;
+		}
+	}
 
-    virtual const string& NodeType() {
-        static string s = "StatList";
+	virtual const string& NodeType() {
+		static string s = "StatList";
 
-        return s;
-    }
+		return s;
+	}
 };
 
 class AssignArrayStat : public Stat {
 public:
 
-    AssignArrayStat(Symbol* _sym, IRNode* expr_left, IRNode* expr_right, SymbolTable* symtab)
-    : Stat(symtab), sym(_sym) {
+	AssignArrayStat(Symbol* _sym, IRNode* expr_left, IRNode* expr_right, SymbolTable* symtab)
+		: Stat(symtab), sym(_sym) {
 
-        expr_left->setParent(this);
-        expr_right->setParent(this);
+			expr_left->setParent(this);
+			expr_right->setParent(this);
 
-        vector<IRNode*> *children = new vector<IRNode*>();
-        children->push_back(expr_left);
-        children->push_back(expr_right);
+			vector<IRNode*> *children = new vector<IRNode*>();
+			children->push_back(expr_left);
+			children->push_back(expr_right);
 
-        setChildren(children);
-    }
+			setChildren(children);
+	}
 
-    virtual void lower() {
-       /* IRNode* expr_left = getChildren()->at(0);
-        IRNode* expr_right = getChildren()->at(1);
+	virtual void lower() {
+		IRNode* expr_left = getChildren()->at(0);
+		IRNode* expr_right = getChildren()->at(1);
+
+		Symbol* r_value = new Symbol(Symbol::genUniqueId()); 
+		IRNode* right_exp = new AssignStat(r_value, expr_right, getSymTab());
+
+		getSymTab()->append(r_value);
+
+		Symbol* index = new Symbol(Symbol::genUniqueId());
+
+		IRNode* l_assign = new AssignStat(index, expr_left, getSymTab());
+
+		vector<IRNode*>* child = new vector<IRNode*>();
+		child->push_back(new Tok(token::times, getSymTab()));
+		child->push_back(new Var(index, getSymTab()));
+		child->push_back(new Const(standard_types[BaseType::INT]->getSize(), getSymTab()));
+
+		IRNode* mul = new BinExpr(token::times, child, getSymTab());
+
+		getSymTab()->append(index);
+
+		IRNode* index_assign = new AssignStat(index, mul, getSymTab());
+
+		Var* array = new Var(sym, getSymTab());
+
+		IRNode* mem = new StoreStat(r_value, array, new Var(index, getSymTab()), getSymTab());
+
+		StatList *statements = new StatList(getSymTab());
 
 
-        vector<IRNode*>* child = new vector<IRNode*>();
-        child->push_back(expr_left);
-        child->push_back(new Const(standard_types[BaseType::INT]->getSize(), getSymTab()));
+		statements->append(right_exp);
+		statements->append(l_assign);
+		statements->append(index_assign);
 
-        Expr* mul = new BinExpr(token::times, child, getSymTab());
+		statements->append(mem);
 
-        Var* array = new Var(sym, getSymTab());
+		statements->setParent(getParent());
 
-        LoadStat* mem = new LoadStat(sym, array, getSymTab());
+		getParent()->replace(this, statements);
 
-        vector<IRNode*>* child2 = new vector<IRNode*>();
-        child2->push_back(mul);
-        child2->push_back(mem);
+	}
 
-        IRNode* sum = new BinExpr(token::plus, child2, getSymTab());
+	virtual const string& NodeType() {
+		static string s = "AssignArrayStat";
 
-        Symbol* temp = new Symbol();
-
-        AssignStat* assign_temp = new AssignStat(temp, sum, getSymTab());
-
-        StoreStat* assign = new StoreStat(temp, expr_right, getSymTab());
-
-        StatList *statements = new StatList(getSymTab());
-
-        statements->append(assign_temp);
-        statements->append(assign);
-
-        statements->setParent(getParent());
-
-        getParent()->replace(this, assign);*/
-
-    }
-
-    virtual const string& NodeType() {
-        static string s = "AssignArrayStat";
-
-        return s;
-    }
+		return s;
+	}
 
 private:
-    Symbol* sym;
+	Symbol* sym;
 
 };
 
 class CallStat : public Stat {
 public:
 
-    CallStat(CallExpr* expr, SymbolTable* symtab)
-    : Stat(symtab), call(expr) {
+	CallStat(CallExpr* expr, SymbolTable* symtab)
+		: Stat(symtab), call(expr) {
 
-        call->setParent(this);
+			call->setParent(this);
 
-        vector<IRNode*>* children = new vector<IRNode*>();
-        children->push_back(call);
+			vector<IRNode*>* children = new vector<IRNode*>();
+			children->push_back(call);
 
-        setChildren(children);
-    }
+			setChildren(children);
+	}
 
-    virtual std::list<Symbol*>& get_uses() {
+	virtual std::list<Symbol*>& get_uses() {
 
-        if (!IRNode::get_uses().size()) {
+		if (!IRNode::get_uses().size()) {
 
-            IRNode::get_uses().merge(getChildren()->at(0)->get_uses());
+			IRNode::get_uses().merge(getChildren()->at(0)->get_uses());
 
-            for (SymbolTable::iterator it = getSymTab()->begin(); it != getSymTab()->end(); ++it) {
-                if (it->second->getType().getName() != "Function" && it->second->getType().getName() != "Label")
-                    IRNode::get_uses().push_back(it->second);
-            }
-        }
+			for (SymbolTable::iterator it = getSymTab()->begin(); it != getSymTab()->end(); ++it) {
+				if (it->second->getType().getName() != "Function" && it->second->getType().getName() != "Label")
+					IRNode::get_uses().push_back(it->second);
+			}
+		}
 
 
 
-        return IRNode::get_uses();
-    }
+		return IRNode::get_uses();
+	}
 
-    virtual const string& NodeType() {
-        static string s = "CallStat";
+	virtual const string& NodeType() {
+		static string s = "CallStat";
 
-        return s;
-    }
+		return s;
+	}
 
 
 
 private:
-    CallExpr* call;
+	CallExpr* call;
 };
 
 class IfStat : public Stat {
 public:
 
-    IfStat(IRNode* cond, IRNode* then, SymbolTable* symtab)
-    : Stat(symtab) {
+	IfStat(IRNode* cond, IRNode* then, SymbolTable* symtab)
+		: Stat(symtab) {
 
-        cond->setParent(this);
-        then->setParent(this);
+			cond->setParent(this);
+			then->setParent(this);
 
-        vector<IRNode*>* children = new vector<IRNode*>();
-        children->push_back(cond);
-        children->push_back(then);
+			vector<IRNode*>* children = new vector<IRNode*>();
+			children->push_back(cond);
+			children->push_back(then);
 
-        setChildren(children);
-    }
+			setChildren(children);
+	}
 
-    ~IfStat() {
-        //TODO chiamare ~Stat(){ 
-        if (exitStat != NULL)
-            delete exitStat;
-    }
+	~IfStat() {
+		//TODO chiamare ~Stat(){ 
+		if (exitStat != NULL)
+			delete exitStat;
+	}
 
-    virtual void lower() {
+	virtual void lower() {
 
-        cout << "lowering IfStat : " << Id() << endl;
+		cout << "lowering IfStat : " << Id() << endl;
 
-        exitStat = new Stat(getSymTab());
-        Symbol* exitLabel = static_cast<LabelType*> (standard_types[BaseType::LABEL])->Label();
-        exitStat->setLabel(exitLabel);
+		exitStat = new Stat(getSymTab());
+		Symbol* exitLabel = static_cast<LabelType*> (standard_types[BaseType::LABEL])->Label();
+		exitStat->setLabel(exitLabel);
 
-        Symbol* thenLabel = static_cast<LabelType*> (standard_types[BaseType::LABEL])->Label();
-        static_cast<Stat*> (getChildren()->at(1))->setLabel(thenLabel);
+		Symbol* thenLabel = static_cast<LabelType*> (standard_types[BaseType::LABEL])->Label();
+		static_cast<Stat*> (getChildren()->at(1))->setLabel(thenLabel);
 
-        BranchStat* branchExit =
-                new BranchStat(new UnExpr(0, getChildren()->at(1), getSymTab()), thenLabel, getSymTab());
+		BranchStat* branchExit =
+			new BranchStat(new UnExpr(0, getChildren()->at(1), getSymTab()), thenLabel, getSymTab());
 
-        StatList *statlist = new StatList(getSymTab());
+		StatList *statlist = new StatList(getSymTab());
 
-        statlist->append(branchExit);
-        statlist->append(getChildren()->at(1));
-        statlist->append(exitStat);
+		statlist->append(branchExit);
+		statlist->append(getChildren()->at(1));
+		statlist->append(exitStat);
 
-        statlist->setParent(getParent());
+		statlist->setParent(getParent());
 
-        getParent()->replace(this, statlist);
+		getParent()->replace(this, statlist);
 
 
-    }
+	}
 
-    virtual const string& NodeType() {
-        static string s = "IfStat";
+	virtual const string& NodeType() {
+		static string s = "IfStat";
 
-        return s;
-    }
+		return s;
+	}
 
 private:
-    Stat* exitStat;
+	Stat* exitStat;
 };
 
 class WhileStat : public Stat {
 public:
 
-    WhileStat(IRNode *cond, IRNode *body, SymbolTable *symtab)
-    : Stat(symtab) {
+	WhileStat(IRNode *cond, IRNode *body, SymbolTable *symtab)
+		: Stat(symtab) {
 
-        cond->setParent(this);
-        body->setParent(this);
+			cond->setParent(this);
+			body->setParent(this);
 
-        vector<IRNode*>* children = new vector<IRNode*>();
-        children->push_back(cond);
-        children->push_back(body);
+			vector<IRNode*>* children = new vector<IRNode*>();
+			children->push_back(cond);
+			children->push_back(body);
 
-        setChildren(children);
-    }
+			setChildren(children);
+	}
 
-    ~WhileStat() {
-        if (exitStat != NULL)
-            delete exitStat;
-    }
+	~WhileStat() {
+		if (exitStat != NULL)
+			delete exitStat;
+	}
 
-    virtual void lower() {
+	virtual void lower() {
 
-        cout << "lowering WhileStat : " << Id() << endl;
+		cout << "lowering WhileStat : " << Id() << endl;
 
-        exitStat = new Stat(getSymTab());
-        Symbol* exitLabel = static_cast<LabelType*> (standard_types[BaseType::LABEL])->Label();
-        Symbol* entryLabel = static_cast<LabelType*> (standard_types[BaseType::LABEL])->Label();
+		exitStat = new Stat(getSymTab());
+		Symbol* exitLabel = static_cast<LabelType*> (standard_types[BaseType::LABEL])->Label();
+		Symbol* entryLabel = static_cast<LabelType*> (standard_types[BaseType::LABEL])->Label();
 
-        exitStat->setLabel(exitLabel);
+		exitStat->setLabel(exitLabel);
 
 
-        BranchStat* branchEntry =
-                new BranchStat((getChildren())->at(0), exitLabel, getSymTab());
+		BranchStat* branchEntry =
+			new BranchStat((getChildren())->at(0), exitLabel, getSymTab());
 
-        IRNode* const_var = new Const(1, getSymTab());
+		IRNode* const_var = new Const(1, getSymTab());
 
-        BranchStat* branchEnd =
-                new BranchStat(const_var, entryLabel, getSymTab());
+		BranchStat* branchEnd =
+			new BranchStat(const_var, entryLabel, getSymTab());
 
-        branchEntry->setLabel(entryLabel);
+		branchEntry->setLabel(entryLabel);
 
-        StatList* statlist = new StatList(getSymTab());
+		StatList* statlist = new StatList(getSymTab());
 
-        statlist->append(branchEntry);
-        statlist->append(getChildren()->at(1));
-        statlist->append(branchEnd);
-        statlist->append(exitStat);
+		statlist->append(branchEntry);
+		statlist->append(getChildren()->at(1));
+		statlist->append(branchEnd);
+		statlist->append(exitStat);
 
-        statlist->setParent(getParent());
+		statlist->setParent(getParent());
 
-        getParent()->replace(this, statlist);
+		getParent()->replace(this, statlist);
 
-    }
+	}
 
-    virtual const string& NodeType() {
-        static string s = "WhileStat";
+	virtual const string& NodeType() {
+		static string s = "WhileStat";
 
-        return s;
-    }
+		return s;
+	}
 
 private:
-    Stat* exitStat;
+	Stat* exitStat;
 };
 
 class PrintStat : public Stat {
 public:
 
-    PrintStat(Symbol *_sym, SymbolTable *symtab)
-    : sym(_sym), Stat(symtab) {
+	PrintStat(Symbol *_sym, SymbolTable *symtab)
+		: sym(_sym), Stat(symtab) {
 
-    }
+	}
 
-    virtual std::list<Symbol*>& get_uses() {
-        if (!IRNode::get_uses().size())
-            IRNode::get_uses().push_back(sym);
-        return IRNode::get_uses();
-    }
+	virtual std::list<Symbol*>& get_uses() {
+		if (!IRNode::get_uses().size())
+			IRNode::get_uses().push_back(sym);
+		return IRNode::get_uses();
+	}
 
-    virtual void replace_uses(Symbol* old, Symbol* _sym) {
-        if (old == sym) {
-            sym = _sym;
-            IRNode::get_uses().clear();
-            IRNode::get_uses().push_back(sym);
-        }
-    }
+	virtual void replace_uses(Symbol* old, Symbol* _sym) {
+		if (old == sym) {
+			sym = _sym;
+			IRNode::get_uses().clear();
+			IRNode::get_uses().push_back(sym);
+		}
+	}
 
-    virtual const string& NodeType() {
-        static string s = "Print";
+	virtual const string& NodeType() {
+		static string s = "Print";
 
-        return s;
-    }
+		return s;
+	}
 private:
-    Symbol* sym;
+	Symbol* sym;
 };
 
 class Definition : public IRNode {
 public:
 
-    Definition(Symbol* _symbol) : symbol(_symbol) {
+	Definition(Symbol* _symbol) : symbol(_symbol) {
 
-    }
+	}
 
-    virtual const string& NodeType() {
-        static string s = "Def";
+	virtual const string& NodeType() {
+		static string s = "Def";
 
-        return s;
-    }
+		return s;
+	}
 
-    virtual Symbol* getSymbol() {
-        return symbol;
-    }
+	virtual Symbol* getSymbol() {
+		return symbol;
+	}
 
 private:
-    Symbol* symbol;
+	Symbol* symbol;
 
 };
 
 class DefinitionList : public IRNode {
 public:
 
-    void append(Definition* elem) {
-        elem->setParent(this);
+	void append(Definition* elem) {
+		elem->setParent(this);
 
-        cout << "Append stat " << elem->Id() << " to " << Id() << endl;
+		cout << "Append stat " << elem->Id() << " to " << Id() << endl;
 
-        addChildren(elem);
-    }
+		addChildren(elem);
+	}
 
-    virtual const string& NodeType() {
-        static string s = "DefList";
+	virtual const string& NodeType() {
+		static string s = "DefList";
 
-        return s;
-    }
+		return s;
+	}
 
 };
 
 class Block : public Stat {
 public:
 
-    Block(SymbolTable* _gl_sym, SymbolTable* _lc_sym,
-            IRNode* _body, DefinitionList* _defs) :
-    Stat(_gl_sym), gl_sym(_gl_sym), lc_sym(_lc_sym), body(_body), defs(_defs) {
-        body->setParent(this);
-        defs->setParent(this);
+	Block(SymbolTable* _gl_sym, SymbolTable* _lc_sym,
+		IRNode* _body, DefinitionList* _defs) :
+	Stat(_gl_sym), gl_sym(_gl_sym), lc_sym(_lc_sym), body(_body), defs(_defs) {
+		body->setParent(this);
+		defs->setParent(this);
 
-        vector<IRNode*>* children = new vector<IRNode*>();
-        children->push_back(body);
-        children->push_back(defs);
+		vector<IRNode*>* children = new vector<IRNode*>();
+		children->push_back(body);
+		children->push_back(defs);
 
-        setChildren(children);
-    }
+		setChildren(children);
+	}
 
-    ~Block() {
-        delete lc_sym;
-    }
+	~Block() {
+		delete lc_sym;
+	}
 
-    virtual const string& NodeType() {
-        static string s = "Block";
+	virtual const string& NodeType() {
+		static string s = "Block";
 
-        return s;
-    }
+		return s;
+	}
 
-    SymbolTable& getGlobalSymbolTable() {
-        return *gl_sym;
-    }
+	SymbolTable& getGlobalSymbolTable() {
+		return *gl_sym;
+	}
 
-    void setGlobal() {
-        for (SymbolTable::iterator it = lc_sym->begin(); it != lc_sym->end(); ++it) {
-            it->second->setGlobal();
-        }
-    }
+	void setGlobal() {
+		for (SymbolTable::iterator it = lc_sym->begin(); it != lc_sym->end(); ++it) {
+			it->second->setGlobal();
+		}
+	}
 
 private:
-    IRNode* body;
-    DefinitionList* defs;
-    SymbolTable* gl_sym;
-    SymbolTable* lc_sym;
+	IRNode* body;
+	DefinitionList* defs;
+	SymbolTable* gl_sym;
+	SymbolTable* lc_sym;
 
 };
 
 class FunctionDef : public Definition {
 public:
 
-    FunctionDef(Symbol* _symbol, SymbolTable* _parameters, IRNode* _body)
-    : Definition(_symbol), parameters(_parameters), body(_body) {
+	FunctionDef(Symbol* _symbol, SymbolTable* _parameters, IRNode* _body)
+		: Definition(_symbol), parameters(_parameters), body(_body) {
 
-        body->setParent(this);
+			body->setParent(this);
 
-        vector<IRNode*>* children = new vector<IRNode*>();
-        children->push_back(body);
+			vector<IRNode*>* children = new vector<IRNode*>();
+			children->push_back(body);
 
-        setChildren(children);
+			setChildren(children);
 
-    }
+	}
 
-    std::list<Symbol*>& getGlobalSymbol() {
+	std::list<Symbol*>& getGlobalSymbol() {
 
-        if (!global_symbol.size()) {
+		if (!global_symbol.size()) {
 
-            Block *b = static_cast<Block*> (body);
-            SymbolTable& symt = b->getGlobalSymbolTable();
+			Block *b = static_cast<Block*> (body);
+			SymbolTable& symt = b->getGlobalSymbolTable();
 
-            for (SymbolTable::iterator it = symt.begin(); it != symt.end(); ++it) {
-                if (it->second->getType().getName() != "Function" && it->second->getType().getName() != "Label")
-                    global_symbol.push_back(it->second);
-            }
-        }
+			for (SymbolTable::iterator it = symt.begin(); it != symt.end(); ++it) {
+				if (it->second->getType().getName() != "Function" && it->second->getType().getName() != "Label")
+					global_symbol.push_back(it->second);
+			}
+		}
 
-        return global_symbol;
-    }
+		return global_symbol;
+	}
 
-    ~FunctionDef() {
-        delete parameters;
-        delete body;
-    }
+	~FunctionDef() {
+		delete parameters;
+		delete body;
+	}
 
-    virtual const string& NodeType() {
-        static string s = "FunctionDef";
+	virtual const string& NodeType() {
+		static string s = "FunctionDef";
 
-        return s;
-    }
+		return s;
+	}
 
-    SymbolTable* getParameters() {
-        return parameters;
-    }
+	SymbolTable* getParameters() {
+		return parameters;
+	}
 
 private:
-    SymbolTable* parameters;
-    IRNode* body;
-    std::list<Symbol*> global_symbol;
+	SymbolTable* parameters;
+	IRNode* body;
+	std::list<Symbol*> global_symbol;
 
 };
 

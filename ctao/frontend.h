@@ -18,7 +18,7 @@
 #include "registeralloc.h"
 #include "Assembler.h"
 
-#define NUM_REGS 3
+#define NUM_REGS 8
 
 using namespace std;
 
@@ -28,7 +28,7 @@ public:
     frontend(lexer lex) : lex(lex) {
         getNextToken();
 
-        standard_types[BaseType::INT] = new Type("INTEGER", 32, BaseType::INT);
+        standard_types[BaseType::INT] = new Type("INTEGER", 4, BaseType::INT);
         standard_types[BaseType::LABEL] = new LabelType();
         standard_types[BaseType::FUNCTION] = new FunctionType();
     }
@@ -134,6 +134,7 @@ private:
 
     void error(const char s[]) {
         cout << s << endl;
+		exit(1);
     }
 
     bool expect(int tok) {
@@ -141,7 +142,7 @@ private:
         cout << "expecting " << tok << endl;
 
         if (!accept(tok)) {
-            error("unexpected symbol");
+            error("syntax error: unexpected symbol");
             return false;
         }
 
@@ -288,7 +289,7 @@ private:
                     expect(token::rsquare);
                     expect(token::becomes);
                     IRNode* expr_right = expression(symtab);
-                    return new AssignArrayStat(target, expr_right, expr_left, symtab);
+                    return new AssignArrayStat(target, expr_left, expr_right, symtab);
                 }
 
                 Symbol* target = symtab->find(name);
@@ -427,7 +428,7 @@ private:
     }
 
     IRNode* factor(SymbolTable *symtab) {
-        name = lex.Identifier();
+        string id = lex.Identifier();
         value = lex.Value();
         if (accept(token::identifier)) {
 
@@ -435,10 +436,10 @@ private:
                 //TODO review expr_left, could be dangerous
                 IRNode* index = expression(symtab);
                 expect(token::rsquare);
-                return new ArrayVar(symtab->find(name), index, symtab);
+                return new ArrayVar(symtab->find(id), index, symtab);
             }
 
-            return new Var(symtab->find(name), symtab);
+            return new Var(symtab->find(id), symtab);
 
         } else if (accept(token::number)) {
             return new Const(value, symtab);

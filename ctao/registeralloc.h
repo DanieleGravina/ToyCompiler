@@ -107,6 +107,11 @@ public:
 		return parameters;
 	}
 
+	int num_reg(){
+		usedRegs();
+		return used_regs.size();
+	}
+
 
 private:
 
@@ -170,7 +175,7 @@ private:
 
         ostringstream convert;
 
-        convert << "R" << (nregs - counter_regs);
+        convert << "r" << (nregs - counter_regs);
 
         name = convert.str();
 

@@ -158,9 +158,6 @@ bool RegisterAlloc::TryAlloc() {
 
     graph.simplify(nregs);
 
-
-    //return select();
-
     /*if (to_spill.size()) {
             cout << "BB to spill ";
             for (list<BasicBlock*>::iterator it = to_spill.begin(); it != to_spill.end(); ++it) {
