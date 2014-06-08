@@ -95,6 +95,32 @@ bool BasicBlock::liveness_iteration() {
 
 void BasicBlock::spill(Symbol* to_spill) {
 
+	if (!((*stats->begin())->getSymTab()->find("zero"))) {
+		(*stats->begin())->getSymTab()->append(new Symbol("zero"));
+	}
+
+	std::list<IRNode*>::iterator it = stats->begin();
+
+	while( it != stats->end()) {
+		if ((*it)->NodeType() == "Load"){
+			if(static_cast<LoadStat*>(*it)->isInitial() && static_cast<LoadStat*>(*it)->getSymbol() == to_spill){
+				stats->remove(*it);
+				it = stats->begin();
+				continue;
+			}
+		}
+
+		if ((*it)->NodeType() == "StoreStat"){
+			if(static_cast<StoreStat*>(*it)->isFinal() && static_cast<StoreStat*>(*it)->getSymbol() == to_spill){
+				stats->remove(*it);
+				it = stats->begin();
+				continue;
+			}
+		}
+
+		++it;
+	}
+
 
 	for (std::list<IRNode*>::iterator it = stats->begin(); it != stats->end(); ++it) {
 
@@ -353,10 +379,7 @@ CFG::CFG(std::list<BasicBlock*>& proc) {
 		(*it2)->remove_useless_next();
 	}
 
-	(*cfg.begin())->insertLoadGlobal();
-	(*cfg.rbegin())->insertStoreGlobal();
-
-
+	insertLoadAndStoreGlobal();
 }
 
 void CFG::spill(Symbol* sym) {

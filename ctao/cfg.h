@@ -273,6 +273,11 @@ public:
 		return cfg.end();
 	}
 
+	void insertLoadAndStoreGlobal(){
+		(*cfg.begin())->insertLoadGlobal();
+		(*cfg.rbegin())->insertStoreGlobal();
+	}
+
 private:
 	std::list<BasicBlock*> cfg;
 	std::set<Symbol*> spilled;
