@@ -261,8 +261,7 @@ public:
 					if((it2->second)->getType().getName() == "array"){
 						int size = (it2->second)->getType().getSize();
 						current->insertCode("       " + Instruction::sub(aux[Register::sp], aux[Register::sp], size) ); //space for local 
-						Symbol *reg_array = it->second->mapVarReg()[it2->second]; 
-						current->insertCode("       " + Instruction::mov(reg_array, aux[Register::fp]));
+						it->second->mapVarReg()[it2->second] = aux[Register::fp]; 
 					}
 					else{
 						if(params && !params->find((it2->second)->getName()) && (it2->second)->isSpilled() )

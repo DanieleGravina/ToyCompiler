@@ -31,17 +31,16 @@ int main(int argc, char **argv) {
     }*/
 
     const char* s_punt = 
-		    " VAR x , squ, a, y, c, f; "
+		    " VAR x , squ;" 
 
             " PROCEDURE square z ; "
             " BEGIN "
+			" uno := z; "
             "  squ := z * z "
             " END; "
 
             " BEGIN "
             " x := 1; "
-			" a := y; "
-			" c := f; "
             " WHILE x <= 10 DO "
             "  BEGIN "
             "  CALL square x ; "
