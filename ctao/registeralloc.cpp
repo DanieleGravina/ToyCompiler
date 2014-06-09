@@ -69,31 +69,24 @@ std::set<Symbol*>* Graph::getNotInterfering(Symbol* var) {
     return not_interfering;
 }
 
-RegisterAlloc::RegisterAlloc(CFG& _cfg, unsigned int _nregs)
-	: cfg(_cfg), nregs(_nregs), counter_regs(nregs), graph(cfg), parameters(NULL) {
+RegisterAlloc::RegisterAlloc(BasicBlock& _bb, unsigned int _nregs)
+	: bb(_bb), nregs(_nregs), counter_regs(nregs), graph(cfg), parameters(NULL) {
 
-    std::set<Symbol*>* accessed;
-    std::set<Symbol*>* crossed;
 
     std::set<Symbol*> temp;
     std::set<Symbol*> temp2;
-
-    map<Symbol*, int> var_freq;
     
-	if((*cfg.begin())->getFunction()){
-		parameters = static_cast<FunctionDef*> ((*cfg.begin())->getFunction())->getParameters();
+	if(bb.getFunction()){
+		parameters = static_cast<FunctionDef*> (bb.getFunction())->getParameters();
 	}
     
-
-    for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
-        BasicBlock::Union(all_vars, (*it)->getGen());
-        BasicBlock::Union(all_vars, (*it)->getKill());
-        BasicBlock::Union(all_vars, (*it)->getLiveOut());
-        BasicBlock::Union(all_vars, (*it)->getLiveIn());
-    }
+    BasicBlock::Union(all_vars, bb.getGen());
+    BasicBlock::Union(all_vars, bb.getKill());
+    BasicBlock::Union(all_vars, bb.getLiveOut());
+    BasicBlock::Union(all_vars, bb.getLiveIn());
 
 
-    for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
+    /*for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
 
         BasicBlock::Union(temp, (*it)->getLiveIn());
         BasicBlock::Union(temp2, (*it)->getLiveOut());
@@ -115,7 +108,7 @@ RegisterAlloc::RegisterAlloc(CFG& _cfg, unsigned int _nregs)
         }
 
         temp.clear();
-        temp2.clear();
+        temp2.clear();*/
     }
 
 

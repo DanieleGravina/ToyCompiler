@@ -213,7 +213,7 @@ void BasicBlock::spill(Symbol* to_spill) {
 				it = stats->begin();
 				while(it != it_old)
 					it++;
-				
+
 				break;
 			}
 		}
@@ -287,6 +287,69 @@ void BasicBlock::insertStoreGlobal(){
 	}
 
 	init();
+}
+
+void BasicBlock::registerAllocation(){
+
+	std::list<std::set<Symbol*>*> live_in;
+	std::list<std::set<Symbol*>*> live_out;
+
+	std::set<Symbol*>* temp;
+
+	temp = new std::set<Symbol*>();
+
+	*temp = getLiveOut();
+
+	live_out.push_front(temp);
+
+	temp = new std::set<Symbol*>();
+
+	for(std::list<IRNode*>::reverse_iterator it = stats->rbegin(); it != stats->rend(); ++it){
+
+		Union(*temp, *(live_out.front()));
+
+		for (list<Symbol*>::iterator it2 = (*it)->get_uses().begin(); it2 != (*it)->get_uses().end(); ++it2) {
+			temp->insert(*it2);
+		}
+
+		Difference(*temp, spilled);
+
+		if ((*it)->NodeType() == "AssignStat" || (*it)->NodeType() == "Load") {
+			temp->erase(static_cast<Stat*> (*it)->getSymbol());
+		}
+
+		live_in.push_front(temp);
+
+		live_out.push_front(temp);
+
+		temp = new std::set<Symbol*>(); 
+
+	}
+
+	std::set<Symbol*> all_vars;
+
+	BasicBlock::Union(all_vars, getGen());
+    BasicBlock::Union(all_vars, getKill());
+    BasicBlock::Union(all_vars, getLiveOut());
+    BasicBlock::Union(all_vars, getLiveIn());
+
+	RegisterAlloc* regalloc = new RegisterAlloc(*this, 8);
+
+	for (set<Symbol*>::iterator it = all_vars.begin(); it != all_vars.end(); ++it) {
+		for(std::list<std::set<Symbol*>*>::iterator it2 = live_out.begin(); it2 != live_out.end(); ++it2){
+			if( (*it2)->find(*it) != (*it2)->end()){
+				for (std::set<Symbol*>::iterator it3 = (*it2)->begin(); it3 != (*it2)->end(); ++it3) {
+                    if (*it != *it3)
+						regalloc->addInterference(*it, *it3);
+                }
+			}
+		}
+	}
+
+	while(regalloc->TryAlloc()){
+		spill(regalloc->SymToSpill());
+		regalloc =  new RegisterAlloc(*this, 8);
+	}
 }
 
 /**

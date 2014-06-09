@@ -80,7 +80,9 @@ public:
 class RegisterAlloc {
 public:
 
-    RegisterAlloc(CFG& _cfg, unsigned int _nregs);
+    RegisterAlloc(BasicBlock& _bb, unsigned int _nregs);
+
+	void addInterference(Symbol* first, Symbol* second);
 
     bool TryAlloc();
 
@@ -189,10 +191,8 @@ private:
 
     }
 
-    CFG &cfg;
+	BasicBlock &bb;
     unsigned int nregs;
-    std::map<BasicBlock*, std::set<Symbol*>*> accessed_vars;
-    std::map<BasicBlock*, std::set<Symbol*>*> crossed_vars;
     std::list<Symbol*> var_stack;
     std::list<BasicBlock*> to_spill;
     std::map<Symbol*, Symbol*> vars;

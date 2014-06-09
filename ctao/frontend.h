@@ -87,7 +87,12 @@ public:
 		std::map<CFG*, RegisterAlloc*> procedures;
 
 		for (std::list<CFG*>::iterator it = l_cfg.begin(); it != l_cfg.end(); ++it) {
-			procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
+
+			for(CFG::iterator it2 = (*it)->begin(); it2 != (*it)->end(); ++it2){
+
+			}
+
+			/*procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
 			while(!procedures[*it]->TryAlloc()){
 				procedures[*it]->res();
 
@@ -102,7 +107,7 @@ public:
 
 			procedures[*it]->res();
 
-			cout << "************************************" << endl;
+			cout << "************************************" << endl;*/
 		}
 
 

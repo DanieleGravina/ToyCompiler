@@ -11,6 +11,7 @@
 #include<list>
 #include<set>
 #include "ir.h"
+#include "registeralloc.h"
 
 static int Id = 0;
 
@@ -137,6 +138,8 @@ public:
 	Symbol* getSymOfFunction(){
 		return function_sym;
 	}
+
+	void registerAllocation();
 
 	SymbolTable* parameters(){
 		
