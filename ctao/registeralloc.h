@@ -80,7 +80,7 @@ public:
 class RegisterAlloc {
 public:
 
-    RegisterAlloc(BasicBlock& _bb, unsigned int _nregs);
+    RegisterAlloc(CFG& _cfg, unsigned int _nregs);
 
 	void addInterference(Symbol* first, Symbol* second);
 
@@ -105,6 +105,13 @@ public:
 		return all_vars;
 	}
 
+	int getNumParameters() const{
+		if (parameters)
+			return parameters->size();
+		else
+			return 0;
+	}
+
 	SymbolTable* getParameters(){
 		return parameters;
 	}
@@ -114,18 +121,20 @@ public:
 		return used_regs.size();
 	}
 
+	set<Symbol*>& allRegs(){
+		return all_regs;
+	}
+
 
 private:
 
-    //bool select();
-
-    void toSpill() {
+    /*void toSpill() {
 
         for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
             if (accessed_vars[*it]->size() + crossed_vars[*it]->size() > nregs)
                 to_spill.push_back(*it);
         }
-    }
+    }*/
 
     void usedRegs() {
         for (map<Symbol*, Symbol*>::iterator it = vars.begin(); it != vars.end(); ++it) {
@@ -191,19 +200,21 @@ private:
 
     }
 
-	BasicBlock &bb;
+	CFG &cfg;
+	unsigned int real_regs;
     unsigned int nregs;
+	unsigned int counter_regs;
     std::list<Symbol*> var_stack;
     std::list<BasicBlock*> to_spill;
     std::map<Symbol*, Symbol*> vars;
     std::set<Symbol*> used_regs;
     std::set<Symbol*> all_vars;
     std::set<Symbol*> all_regs;
-    unsigned int counter_regs;
     Symbol* sym_to_spill;
     Graph graph;
 
 	SymbolTable* parameters;
+	Symbol* zero; //special var that contains always zero
 };
 
 

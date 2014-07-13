@@ -88,11 +88,7 @@ public:
 
 		for (std::list<CFG*>::iterator it = l_cfg.begin(); it != l_cfg.end(); ++it) {
 
-			for(CFG::iterator it2 = (*it)->begin(); it2 != (*it)->end(); ++it2){
-
-			}
-
-			/*procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
+			procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
 			while(!procedures[*it]->TryAlloc()){
 				procedures[*it]->res();
 
@@ -105,9 +101,13 @@ public:
 				procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
 			}
 
+			for(CFG::iterator it2 = (*it)->begin(); it2 != (*it)->end(); ++it2){
+				(*it2)->registerAllocation(procedures[*it]->allRegs(), procedures[*it]->mapVarReg());
+			}
+
 			procedures[*it]->res();
 
-			cout << "************************************" << endl;*/
+			cout << "************************************" << endl;
 		}
 
 

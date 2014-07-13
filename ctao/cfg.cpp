@@ -6,7 +6,7 @@
 
 BasicBlock::BasicBlock(std::list<IRNode*>* _stats = NULL, list<Symbol*>* _labels = NULL)
 	: stats(_stats), labels(_labels), target(NULL), next(NULL), bb_target(NULL), total_var_used(0),
-	function_sym(NULL) {
+	function_sym(NULL), firstBB(false) {
 
 		myId = ++Id;
 
@@ -77,6 +77,7 @@ bool BasicBlock::liveness_iteration() {
 			}
 			Difference(live_out, spilled);
 		}
+
 	}
 
 	std::set<Symbol*> temp;
@@ -88,6 +89,17 @@ bool BasicBlock::liveness_iteration() {
 	Union(temp, gen);
 
 	live_in = temp;
+
+	if(firstBB){
+		if (getFunction()) { //not global
+			function_sym = static_cast<FunctionDef*> (getFunction())->getSymbol();
+			std::list<Symbol*>& global = static_cast<FunctionDef*> (getFunction())->getGlobalSymbol();
+			for (std::list<Symbol*>::iterator it = global.begin(); it != global.end(); ++it) {
+				live_in.insert(*it);
+			}
+			Difference(live_in, spilled);
+		}
+	}
 
 	return (lin == live_in.size() && lout == live_out.size());
 
@@ -127,7 +139,7 @@ void BasicBlock::spill(Symbol* to_spill) {
 		if ((*it)->NodeType() == "AssignStat") {
 			AssignStat* assign = static_cast<AssignStat*> (*it);
 			IRNode* assign_zero = NULL;
-			IRNode* var = NULL;
+			IRNode* temp_var = NULL;
 
 			if (assign->getSymbol() == to_spill) {
 				Symbol* temp = new Symbol(Symbol::genUniqueId());
@@ -137,12 +149,12 @@ void BasicBlock::spill(Symbol* to_spill) {
 				if (to_spill->isGlobal()) {
 					Symbol* zero = (*it)->getSymTab()->find("zero");
 					assign_zero = new AssignStat(zero, new Const(0, (*it)->getSymTab()), (*it)->getSymTab());
-					var = new Var(to_spill, (*it)->getSymTab());
-					store = new StoreStat(temp, new Var((*it)->getSymTab()->find("zero"), (*it)->getSymTab()), var, (*it)->getSymTab());
+					temp_var = new Var(temp, (*it)->getSymTab());
+					store = new StoreStat(to_spill, new Var((*it)->getSymTab()->find("zero"), (*it)->getSymTab()), temp_var, (*it)->getSymTab());
 				}
 				else{
-					var = new Const(0, (*it)->getSymTab());
-					store = new StoreStat(temp, var, var, (*it)->getSymTab());
+					temp_var = new Const(0, (*it)->getSymTab());
+					store = new StoreStat(temp, temp_var, temp_var, (*it)->getSymTab());
 				}
 
 				assign->setSymbol(temp);
@@ -289,67 +301,130 @@ void BasicBlock::insertStoreGlobal(){
 	init();
 }
 
-void BasicBlock::registerAllocation(){
+void BasicBlock::registerAllocation(set<Symbol*>& allRegs, map<Symbol*, Symbol*>& varToRegGlobal){
+
+	map<Symbol*, set<Symbol*>*> graph;
+	set<Symbol*> usedRegs;
+	set<Symbol*> avaibleRegs = allRegs;
+	int numRegs;
 
 	std::list<std::set<Symbol*>*> live_in;
 	std::list<std::set<Symbol*>*> live_out;
 
 	std::set<Symbol*>* temp;
+	std::set<Symbol*> to_alloc;
+	std::set<Symbol*> all_vars;
+	std::set<Symbol*> globals;
+
+	BasicBlock::Union(all_vars, getGen());
+	BasicBlock::Union(all_vars, getKill());
+	BasicBlock::Union(all_vars, getLiveOut());
+	BasicBlock::Union(all_vars, getLiveIn());
+
+	//zero has dedicated register
+	all_vars.erase(getSymTab()->find("zero"));
+
+	for(set<Symbol*>::iterator it = all_vars.begin(); it != all_vars.end(); ++it){
+		graph[*it] = new std::set<Symbol*>();
+
+		if (getLiveOut().find(*it) == getLiveOut().end() && getLiveIn().find(*it) == getLiveIn().end()){
+			to_alloc.insert(*it);
+		}
+		else{
+			globals.insert(*it);
+		}
+	}
+
 
 	temp = new std::set<Symbol*>();
 
 	*temp = getLiveOut();
 
-	live_out.push_front(temp);
+	live_in.push_front(temp);
 
 	temp = new std::set<Symbol*>();
 
 	for(std::list<IRNode*>::reverse_iterator it = stats->rbegin(); it != stats->rend(); ++it){
 
+		live_out.push_front(live_in.front());
+
 		Union(*temp, *(live_out.front()));
+
+		if ((*it)->NodeType() == "AssignStat" || (*it)->NodeType() == "Load") {
+			temp->erase(static_cast<Stat*> (*it)->getSymbol());
+		}
 
 		for (list<Symbol*>::iterator it2 = (*it)->get_uses().begin(); it2 != (*it)->get_uses().end(); ++it2) {
 			temp->insert(*it2);
 		}
 
 		Difference(*temp, spilled);
-
-		if ((*it)->NodeType() == "AssignStat" || (*it)->NodeType() == "Load") {
-			temp->erase(static_cast<Stat*> (*it)->getSymbol());
-		}
+		temp->erase(getSymTab()->find("zero"));
 
 		live_in.push_front(temp);
-
-		live_out.push_front(temp);
 
 		temp = new std::set<Symbol*>(); 
 
 	}
 
-	std::set<Symbol*> all_vars;
+	//add interference in the graph 
 
-	BasicBlock::Union(all_vars, getGen());
-    BasicBlock::Union(all_vars, getKill());
-    BasicBlock::Union(all_vars, getLiveOut());
-    BasicBlock::Union(all_vars, getLiveIn());
-
-	RegisterAlloc* regalloc = new RegisterAlloc(*this, 8);
-
-	for (set<Symbol*>::iterator it = all_vars.begin(); it != all_vars.end(); ++it) {
-		for(std::list<std::set<Symbol*>*>::iterator it2 = live_out.begin(); it2 != live_out.end(); ++it2){
-			if( (*it2)->find(*it) != (*it2)->end()){
-				for (std::set<Symbol*>::iterator it3 = (*it2)->begin(); it3 != (*it2)->end(); ++it3) {
-                    if (*it != *it3)
-						regalloc->addInterference(*it, *it3);
-                }
+	for (std::list<std::set<Symbol*>*>::iterator it = live_in.begin(); it != live_in.end(); ++it){
+		for(std::set<Symbol*>::iterator it2 = to_alloc.begin(); it2 != to_alloc.end(); ++it2){
+			if((*it)->find(*it2) != (*it)->end()){
+				for(std::set<Symbol*>::iterator it3 = (*it)->begin(); it3 != (*it)->end(); ++it3){
+					graph[*it2]->insert(*it3);
+					graph[*it3]->insert(*it2);
+				}
+				graph[*it2]->erase(*it2);
 			}
 		}
 	}
 
-	while(regalloc->TryAlloc()){
-		spill(regalloc->SymToSpill());
-		regalloc =  new RegisterAlloc(*this, 8);
+	//load global var assignment
+	for(map<Symbol*, Symbol*>::iterator it = varToRegGlobal.begin(); it != varToRegGlobal.end(); ++it){
+		if(to_alloc.find(it->first) == to_alloc.end()){
+			varToReg[it->first] = it->second;
+			usedRegs.insert(it->second);
+		}
 	}
+
+	BasicBlock::Difference(avaibleRegs, usedRegs);
+
+	//assign register to the temp var 
+	for(std::set<Symbol*>::iterator it = to_alloc.begin(); it != to_alloc.end(); ++it){
+		set<Symbol*> not_interfering = allRegs;
+		for(std::set<Symbol*>::iterator it2 = graph[*it]->begin(); it2 != graph[*it]->end(); ++it2){
+			if(varToReg.find(*it2) != varToReg.end()){
+				not_interfering.erase(varToReg[*it2]);
+			}
+		}
+
+		if(not_interfering.size())
+			varToReg[*it] = (*not_interfering.begin());
+		else
+		{
+			if(avaibleRegs.size()){
+				varToReg[*it]  = (*avaibleRegs.begin());
+				avaibleRegs.erase(varToReg[*it]);
+			}
+			else
+				cout << "error : no enough register " << endl;
+		}
+
+		not_interfering.clear();
+	}
+
+	//free graph, live in, live out
+
+	for(map<Symbol*, set<Symbol*>*>::iterator it = graph.begin(); it != graph.end(); ++it){
+		delete it->second;
+	}
+
+	for(list<set<Symbol*>*>::iterator it = live_in.begin(); it != live_in.end(); ++it){
+		delete *it;
+	}
+
 }
 
 /**

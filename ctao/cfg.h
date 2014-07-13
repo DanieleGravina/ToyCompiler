@@ -11,7 +11,6 @@
 #include<list>
 #include<set>
 #include "ir.h"
-#include "registeralloc.h"
 
 static int Id = 0;
 
@@ -39,6 +38,10 @@ public:
 	* @return true if completed, else false
 	*/
 	bool liveness_iteration();
+
+	void setFirstBB(){
+		firstBB = true;
+	}
 
 	IRNode* getFunction() {
 		return static_cast<Stat*> (stats->front())->getFunction();
@@ -135,18 +138,26 @@ public:
 
 	void spill(Symbol* to_spill);
 
+	set<Symbol*>& getSpilled(){
+		return spilled;
+	}
+
 	Symbol* getSymOfFunction(){
 		return function_sym;
 	}
 
-	void registerAllocation();
+	void BasicBlock::registerAllocation(set<Symbol*>& allRegs, map<Symbol*, Symbol*>& varToRegGlobal);
 
 	SymbolTable* parameters(){
-		
+		//TODO ??
 	}
 
 	void insertLoadGlobal();
 	void insertStoreGlobal();
+
+	map<Symbol*, Symbol*>& mapVarToReg(){
+		return varToReg;
+	}
 
 private:
 
@@ -163,7 +174,12 @@ private:
 	std::set<Symbol*> spilled;
 	int total_var_used;
 
+	std::map<Symbol*, Symbol*> varToReg;
+
 	Symbol* function_sym;
+
+	//says if this is the first BB of the cfg
+	bool firstBB;
 
 };
 
@@ -180,6 +196,11 @@ public:
 	CFG(std::list<BasicBlock*>& proc);
 
 	void liveness() {
+
+		BasicBlock* first = *begin();
+
+		//insert as live in parameters if basic block is the first of a function
+		first->setFirstBB();
 
 		int counter = 0;
 

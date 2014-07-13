@@ -69,24 +69,30 @@ std::set<Symbol*>* Graph::getNotInterfering(Symbol* var) {
     return not_interfering;
 }
 
-RegisterAlloc::RegisterAlloc(BasicBlock& _bb, unsigned int _nregs)
-	: bb(_bb), nregs(_nregs), counter_regs(nregs), graph(cfg), parameters(NULL) {
+RegisterAlloc::RegisterAlloc(CFG& _cfg, unsigned int _nregs)
+	: cfg(_cfg), real_regs(_nregs), nregs(real_regs - 1), counter_regs(nregs), graph(cfg), parameters(NULL), zero(NULL) {
 
 
     std::set<Symbol*> temp;
     std::set<Symbol*> temp2;
     
-	if(bb.getFunction()){
-		parameters = static_cast<FunctionDef*> (bb.getFunction())->getParameters();
+	if((*cfg.begin())->getFunction()){
+		parameters = static_cast<FunctionDef*> ((*cfg.begin())->getFunction())->getParameters();
 	}
     
-    BasicBlock::Union(all_vars, bb.getGen());
-    BasicBlock::Union(all_vars, bb.getKill());
-    BasicBlock::Union(all_vars, bb.getLiveOut());
-    BasicBlock::Union(all_vars, bb.getLiveIn());
+    
+    for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
+        BasicBlock::Union(all_vars, (*it)->getGen());
+        BasicBlock::Union(all_vars, (*it)->getKill());
+        BasicBlock::Union(all_vars, (*it)->getLiveOut());
+        BasicBlock::Union(all_vars, (*it)->getLiveIn());
+
+		if(!zero)
+			zero = (*it)->getSymTab()->find("zero");
+    }
 
 
-    /*for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
+    for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
 
         BasicBlock::Union(temp, (*it)->getLiveIn());
         BasicBlock::Union(temp2, (*it)->getLiveOut());
@@ -108,7 +114,7 @@ RegisterAlloc::RegisterAlloc(BasicBlock& _bb, unsigned int _nregs)
         }
 
         temp.clear();
-        temp2.clear();*/
+        temp2.clear();
     }
 
 
@@ -163,14 +169,17 @@ bool RegisterAlloc::TryAlloc() {
     //Symbol* var = var_stack.back();
 
 	std::list<Symbol*> stack;
+	set<Symbol*> parameters_inserted; 
 
 	if(parameters){
 		for(SymbolTable::iterator it = parameters->begin(); it != parameters->end(); ++it){
 			stack.push_back(it->second);
+			parameters_inserted.insert(it->second);
 		}
 
 		for(std::list<Symbol*>::iterator it = graph.getStack().begin(); it != graph.getStack().end(); ++it){
-			stack.push_back(*it);
+			if(parameters_inserted.find(*it) == parameters_inserted.end())
+				stack.push_back(*it);
 		}
 	}
 	else{
@@ -207,6 +216,19 @@ bool RegisterAlloc::TryAlloc() {
             }
         }
     }
+
+	//assign zero to a dedicated register
+
+	string reg_zero;
+
+    ostringstream convert;
+
+	convert << "r" << real_regs - 1;
+
+    reg_zero = convert.str();
+
+	if(zero)
+		replace(zero, new Symbol(reg_zero));
 
     return result;
 }

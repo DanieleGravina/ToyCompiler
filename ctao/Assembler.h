@@ -260,8 +260,9 @@ public:
 				if(!(it2->second)->isGlobal() && (it2->second->getType().getName() != "Function" && it2->second->getType().getName() != "Label")){
 					if((it2->second)->getType().getName() == "array"){
 						int size = (it2->second)->getType().getSize();
-						current->insertCode("       " + Instruction::sub(aux[Register::sp], aux[Register::sp], size) ); //space for local 
-						it->second->mapVarReg()[it2->second] = aux[Register::fp]; 
+						current->insertCode("       " + Instruction::sub(aux[Register::sp], aux[Register::sp], size) ); //space for local
+						for(CFG::iterator it3 = it->first->begin(); it3 != it->first->end(); ++it3) 
+							(*it3)->mapVarToReg()[it2->second] = aux[Register::fp]; 
 					}
 					else{
 						if(params && !params->find((it2->second)->getName()) && (it2->second)->isSpilled() )
@@ -279,6 +280,8 @@ public:
 			for (std::list<BasicBlock*>::iterator it2 = it->first->begin(); it2 != it->first->end(); ++it2) {
 
 				std::list<IRNode*> stats = (*it2)->getStats();
+
+				currentBB = *it2;
 
 				for (list<IRNode*>::iterator it3 = stats.begin(); it3 != stats.end(); ++it3) {
 
@@ -435,13 +438,14 @@ private:
 
 		Symbol* reg = store->getSymbol();
 
-		if (reg->isSpilled()) {
+		if (currentBB->getSpilled().find(reg) != currentBB->getSpilled().end()) {
 
 			if(reg->isGlobal()){
-				IRNode *expr = store->getChildren()->at(0);;
-				Symbol temp(TermCode(expr, current));
-				r2 = &temp;
-				imm = 0;
+				r3 = reg;
+				r2 = static_cast<Var*>(store->getChildren()->at(0))->getSymbol();
+				r2 = currentBB->mapVarToReg()[r2];
+				r1 = static_cast<Var*>(store->getChildren()->at(1))->getSymbol();
+				r1 = currentBB->mapVarToReg()[r1];
 			}
 			else{
 				imm = current->getSpillOffset()[reg];
@@ -449,17 +453,17 @@ private:
 			}
 
 		} else {
-			r1 = current->regalloc().mapVarReg()[store->getSymbol()];
+			r1 = currentBB->mapVarToReg()[store->getSymbol()];
 			imm = 0;
 
 			if (store->getChildren()->at(0)->NodeType() == "BinExpr") {
 			} else {
 				r3 = (static_cast<Var*>(store->getChildren()->at(1)))->getSymbol();
 				if(!store->isFinal()){
-					r3 = current->regalloc().mapVarReg()[r3];
+					r3 = currentBB->mapVarToReg()[r3];
 				}
 				r2 = (static_cast<Var*>(store->getChildren()->at(0)))->getSymbol();
-				r2 = current->regalloc().mapVarReg()[r2];
+				r2 = currentBB->mapVarToReg()[r2];
 			}
 		}
 
@@ -486,7 +490,7 @@ private:
 
 		LoadStat* load = static_cast<LoadStat*> (stat);
 
-		r1 = current->regalloc().mapVarReg()[load->getSymbol()];
+		r1 = currentBB->mapVarToReg()[load->getSymbol()];
 
 		Symbol* reg = static_cast<Var*>(load->getChildren()->at(0))->getSymbol();
 
@@ -495,7 +499,7 @@ private:
 			if(reg->isGlobal()){
 				IRNode *expr = load->getChildren()->at(0);
 				r2 = static_cast<Var*>(load->getChildren()->at(0))->getSymbol();
-				r2 = current->regalloc().mapVarReg()[r2];
+				r2 = currentBB->mapVarToReg()[r2];
 				r3 = static_cast<Var*>(load->getChildren()->at(1))->getSymbol();
 			}
 			else{
@@ -509,10 +513,10 @@ private:
 			} else {
 				r3 = (static_cast<Var*>(load->getChildren()->at(1)))->getSymbol();
 				if(!load->isInitial()){
-					r3 = current->regalloc().mapVarReg()[r3];
+					r3 = currentBB->mapVarToReg()[r3];
 				}
 				r2 = (static_cast<Var*>(load->getChildren()->at(0)))->getSymbol();
-				r2 = current->regalloc().mapVarReg()[r2];
+				r2 = currentBB->mapVarToReg()[r2];
 			}
 		}
 
@@ -730,7 +734,7 @@ private:
 
 
 
-		Symbol* reg = current->regalloc().mapVarReg()[sym];
+		Symbol* reg = currentBB->mapVarToReg()[sym];
 
 		r1 = reg->getName();
 
@@ -805,7 +809,7 @@ private:
 				}
 			}
 
-			Symbol* reg = current->regalloc().mapVarReg()[sym];
+			Symbol* reg = currentBB->mapVarToReg()[sym];
 			return reg->getName();
 		}
 	}
@@ -819,6 +823,8 @@ private:
 	Symbol* mainSym;
 
 	FunctionCode* mainCode;
+
+	BasicBlock* currentBB;
 
 };
 

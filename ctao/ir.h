@@ -240,6 +240,10 @@ public:
 		return table.end();
 	}
 
+	int size() const{
+		return table.size();
+	}
+
 
 private:
 	std::map<std::string, Symbol*> table;
