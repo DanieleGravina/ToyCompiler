@@ -166,18 +166,13 @@ private:
     }
 
     Symbol* next_free_reg() {
-        std::set<Symbol*> avaible_reg = all_regs;
-        Symbol *reg;
-        for (map<Symbol*, Symbol*>::iterator it = vars.begin(); it != vars.end(); ++it) {
-            if (it->second)
-                avaible_reg.erase(it->second);
-        }
-
-        if (avaible_reg.size()) {
-            return *avaible_reg.begin();
-        }
-
-        return NULL;
+		if(ordered_regs.size()){
+			Symbol* result = ordered_regs.front();
+			ordered_regs.pop_front();
+			return result;
+		}
+		else
+			return NULL;
     }
 
     Symbol* get_reg() {
@@ -210,6 +205,7 @@ private:
     std::set<Symbol*> used_regs;
     std::set<Symbol*> all_vars;
     std::set<Symbol*> all_regs;
+	std::list<Symbol*> ordered_regs;
     Symbol* sym_to_spill;
     Graph graph;
 

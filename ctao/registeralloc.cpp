@@ -138,6 +138,7 @@ RegisterAlloc::RegisterAlloc(CFG& _cfg, unsigned int _nregs)
 
     while (reg) {
         all_regs.insert(reg);
+		ordered_regs.push_back(reg);
         reg = get_reg();
     }
 
@@ -190,7 +191,6 @@ bool RegisterAlloc::TryAlloc() {
     Symbol* reg = NULL;
     std::set<Symbol*>* not_interfering;
     stack.pop_front();
-
     replace(var, next_free_reg());
 
     while (stack.size()) {

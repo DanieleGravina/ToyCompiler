@@ -34,8 +34,9 @@ int main(int argc, char **argv) {
 		    " VAR x , squ;" 
 
             " PROCEDURE square z ; "
+			" ARRAY y [10]; "
             " BEGIN "
-            "  squ := z * z "
+			"  squ := z * y[2] "
             " END; "
 
             " BEGIN "
