@@ -209,8 +209,8 @@ void BasicBlock::spill(Symbol* to_spill) {
 					load = new LoadStat(temp, new Var(zero, (*it)->getSymTab()), var, (*it)->getSymTab());
 				}
 				else{
-					var = new Const(0, (*it)->getSymTab());
-					load = new LoadStat(temp, var, new Var(to_spill, (*it)->getSymTab()), (*it)->getSymTab());
+					Symbol* zero = (*it)->getSymTab()->find("zero");
+					load = new LoadStat(temp, new Var(zero, (*it)->getSymTab()), new Var(to_spill, (*it)->getSymTab()), (*it)->getSymTab());
 				}
 
 				if(assign_zero)
@@ -301,7 +301,7 @@ void BasicBlock::insertStoreGlobal(){
 	init();
 }
 
-void BasicBlock::registerAllocation(set<Symbol*>& allRegs, map<Symbol*, Symbol*>& varToRegGlobal){
+bool BasicBlock::registerAllocation(set<Symbol*>& allRegs, map<Symbol*, Symbol*>& varToRegGlobal){
 
 	map<Symbol*, set<Symbol*>*> graph;
 	set<Symbol*> usedRegs;
@@ -408,10 +408,13 @@ void BasicBlock::registerAllocation(set<Symbol*>& allRegs, map<Symbol*, Symbol*>
 				varToReg[*it]  = (*avaibleRegs.begin());
 				avaibleRegs.erase(varToReg[*it]);
 			}
-			else
-				cout << "error : no enough register " << endl;
+			else{
+				sym_to_spill = *it;
+				cout << "error : no enough register, spill needed of " << sym_to_spill->getName() << endl;
+				return false;
+			}
+				
 		}
-
 		not_interfering.clear();
 	}
 
@@ -424,6 +427,8 @@ void BasicBlock::registerAllocation(set<Symbol*>& allRegs, map<Symbol*, Symbol*>
 	for(list<set<Symbol*>*>::iterator it = live_in.begin(); it != live_in.end(); ++it){
 		delete *it;
 	}
+
+	return true;
 
 }
 

@@ -125,6 +125,12 @@ public:
 		return all_regs;
 	}
 
+	Symbol* getCandidateToSpill(){
+		return *graph.getStack().rbegin();
+	}
+
+
+
 
 private:
 

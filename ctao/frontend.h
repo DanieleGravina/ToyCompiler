@@ -18,7 +18,7 @@
 #include "registeralloc.h"
 #include "Assembler.h"
 
-#define NUM_REGS 8
+#define NUM_REGS 3
 
 using namespace std;
 
@@ -89,20 +89,41 @@ public:
 		for (std::list<CFG*>::iterator it = l_cfg.begin(); it != l_cfg.end(); ++it) {
 
 			procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
-			while(!procedures[*it]->TryAlloc()){
-				procedures[*it]->res();
 
-				(*it)->spill(procedures[*it]->SymToSpill());
-				(*it)->liveness();
-				(*it)->print_liveness();
+			bool all_reg_assigned = false;
+			bool cfg_reg_assigned = false;
 
-				delete procedures[*it];
+			while(!all_reg_assigned){
 
-				procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
-			}
+				cfg_reg_assigned = procedures[*it]->TryAlloc();
 
-			for(CFG::iterator it2 = (*it)->begin(); it2 != (*it)->end(); ++it2){
-				(*it2)->registerAllocation(procedures[*it]->allRegs(), procedures[*it]->mapVarReg());
+				if(!cfg_reg_assigned){
+					procedures[*it]->res();
+
+					(*it)->spill(procedures[*it]->SymToSpill());
+					(*it)->liveness();
+					(*it)->print_liveness();
+
+					delete procedures[*it];
+
+					procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
+				}
+				else{
+					all_reg_assigned = true;
+					for(CFG::iterator it2 = (*it)->begin(); it2 != (*it)->end(); ++it2){
+						if (!(*it2)->registerAllocation(procedures[*it]->allRegs(), procedures[*it]->mapVarReg())){
+							all_reg_assigned = false;
+							(*it)->spill(procedures[*it]->getCandidateToSpill());
+							(*it)->liveness();
+							(*it)->print_liveness();
+							delete procedures[*it];
+                            procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
+
+							break;
+						}
+
+					}
+				}
 			}
 
 			procedures[*it]->res();
@@ -114,6 +135,8 @@ public:
 
 
         CodeGenerator codgen(procedures);
+
+		cout << "end" << endl;
     }
 
 

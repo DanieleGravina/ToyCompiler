@@ -146,7 +146,11 @@ public:
 		return function_sym;
 	}
 
-	void BasicBlock::registerAllocation(set<Symbol*>& allRegs, map<Symbol*, Symbol*>& varToRegGlobal);
+	bool registerAllocation(set<Symbol*>& allRegs, map<Symbol*, Symbol*>& varToRegGlobal);
+
+	Symbol* SymToSpill(){
+		return sym_to_spill;
+	}
 
 	SymbolTable* parameters(){
 		//TODO ??
@@ -177,6 +181,8 @@ private:
 	std::map<Symbol*, Symbol*> varToReg;
 
 	Symbol* function_sym;
+
+	Symbol* sym_to_spill;
 
 	//says if this is the first BB of the cfg
 	bool firstBB;
