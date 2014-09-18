@@ -145,17 +145,10 @@ void BasicBlock::spill(Symbol* to_spill) {
 				Symbol* temp = new Symbol(Symbol::genUniqueId());
 
 				IRNode* store;
+				Symbol* zero = (*it)->getSymTab()->find("zero");
 
-				if (to_spill->isGlobal()) {
-					Symbol* zero = (*it)->getSymTab()->find("zero");
-					assign_zero = new AssignStat(zero, new Const(0, (*it)->getSymTab()), (*it)->getSymTab());
-					temp_var = new Var(temp, (*it)->getSymTab());
-					store = new StoreStat(to_spill, new Var((*it)->getSymTab()->find("zero"), (*it)->getSymTab()), temp_var, (*it)->getSymTab());
-				}
-				else{
-					temp_var = new Const(0, (*it)->getSymTab());
-					store = new StoreStat(temp, temp_var, temp_var, (*it)->getSymTab());
-				}
+				temp_var = new Var(temp, (*it)->getSymTab());
+				store = new StoreStat(to_spill, new Var(zero, (*it)->getSymTab()), temp_var, (*it)->getSymTab());
 
 				assign->setSymbol(temp);
 
@@ -201,17 +194,9 @@ void BasicBlock::spill(Symbol* to_spill) {
 
 				Symbol* temp = new Symbol(Symbol::genUniqueId());
 
-
-				if (to_spill->isGlobal()) {
-					Symbol* zero = (*it)->getSymTab()->find("zero");
-					assign_zero = new AssignStat(zero, new Const(0, (*it)->getSymTab()), (*it)->getSymTab());
-					var = new Var(to_spill, (*it)->getSymTab());
-					load = new LoadStat(temp, new Var(zero, (*it)->getSymTab()), var, (*it)->getSymTab());
-				}
-				else{
-					Symbol* zero = (*it)->getSymTab()->find("zero");
-					load = new LoadStat(temp, new Var(zero, (*it)->getSymTab()), new Var(to_spill, (*it)->getSymTab()), (*it)->getSymTab());
-				}
+				var = new Var(to_spill, (*it)->getSymTab());
+				Symbol* zero = (*it)->getSymTab()->find("zero");
+				load = new LoadStat(temp, new Var(zero, (*it)->getSymTab()), var, (*it)->getSymTab());
 
 				if(assign_zero)
 					stats->insert(it, assign_zero);

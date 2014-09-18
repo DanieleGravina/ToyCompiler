@@ -436,20 +436,22 @@ private:
 
 		StoreStat* store = static_cast<StoreStat*> (stat);
 
-		Symbol* reg = store->getSymbol();
+		Symbol* var = store->getSymbol();
 
-		if (currentBB->getSpilled().find(reg) != currentBB->getSpilled().end()) {
+		if (var->isSpilled()) {
 
-			if(reg->isGlobal()){
-				r3 = reg;
+			if(var->isGlobal()){
+				r3 = var;
 				r2 = static_cast<Var*>(store->getChildren()->at(0))->getSymbol();
 				r2 = currentBB->mapVarToReg()[r2];
 				r1 = static_cast<Var*>(store->getChildren()->at(1))->getSymbol();
 				r1 = currentBB->mapVarToReg()[r1];
 			}
 			else{
-				imm = current->getSpillOffset()[reg];
+				imm = current->getSpillOffset()[var];
 				r2 = aux[Register::fp];
+				r1 = static_cast<Var*>(store->getChildren()->at(1))->getSymbol();
+				r1 = currentBB->mapVarToReg()[r1];
 			}
 
 		} else {
@@ -492,18 +494,17 @@ private:
 
 		r1 = currentBB->mapVarToReg()[load->getSymbol()];
 
-		Symbol* reg = static_cast<Var*>(load->getChildren()->at(0))->getSymbol();
+		Symbol* var = static_cast<Var*>(load->getChildren()->at(1))->getSymbol();
 
-		if (reg->isSpilled()) {
+		if (var->isSpilled()) {
 
-			if(reg->isGlobal()){
-				IRNode *expr = load->getChildren()->at(0);
+			if(var->isGlobal()){
 				r2 = static_cast<Var*>(load->getChildren()->at(0))->getSymbol();
 				r2 = currentBB->mapVarToReg()[r2];
 				r3 = static_cast<Var*>(load->getChildren()->at(1))->getSymbol();
 			}
 			else{
-				imm = current->getSpillOffset()[reg];
+				imm = current->getSpillOffset()[var];
 				r2 = aux[Register::fp];
 			}
 
