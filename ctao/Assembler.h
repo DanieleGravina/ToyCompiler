@@ -252,29 +252,40 @@ public:
 
 			current->insertCode("       " + Instruction::mov(aux[Register::fp], aux[Register::sp]));
 
-			int numLocalVariable = 0;
+			int allocSpace = 0;
 
 			SymbolTable* symtab = (*(it->first->begin()))->getSymTab();
+
+			std::list<Symbol*> spilled_parameters;
 
 			for (SymbolTable::iterator it2 = symtab->begin(); it2 != symtab->end(); ++it2) {
 				if(!(it2->second)->isGlobal() && (it2->second->getType().getName() != "Function" && it2->second->getType().getName() != "Label")){
 					if((it2->second)->getType().getName() == "array"){
 						int size = (it2->second)->getType().getSize();
-						current->insertCode("       " + Instruction::sub(aux[Register::sp], aux[Register::sp], size) ); //space for local
+						allocSpace += size;
 						for(CFG::iterator it3 = it->first->begin(); it3 != it->first->end(); ++it3) 
 							(*it3)->mapVarToReg()[it2->second] = aux[Register::fp]; 
 					}
 					else{
-						if(params && !params->find((it2->second)->getName()) && (it2->second)->isSpilled() )
-							numLocalVariable++;
+						if(params && params->find((it2->second)->getName()) != NULL && (it2->second)->isSpilled() ){ //there are parameter spilled?
+							allocSpace += OFFSET;
+							spilled_parameters.push_back(it2->second);
+						}
 					}
 
 					current->insertLocal(it2->second);
 				}
 			}
 
-			if(numLocalVariable)
-				current->insertCode("       " + Instruction::sub(aux[Register::sp], aux[Register::sp], OFFSET*numLocalVariable)); //space for local variables
+			//alloc stack memory for local vars and local arrays
+			if(allocSpace)
+				current->insertCode("       " + Instruction::sub(aux[Register::sp], aux[Register::sp], OFFSET*allocSpace)); //space for local variables
+
+			//save to the stack position parameters spilled passed by register location
+			int indexReg = 0;
+			for(std::list<Symbol*>::iterator it2 = spilled_parameters.begin(); it2 != spilled_parameters.end(); ++it2, ++indexReg)
+				current->insertCode("       " + Instruction::store(aux[indexReg], aux[Register::fp], current->getSpillOffset()[*it2]));
+
 
 
 			for (std::list<BasicBlock*>::iterator it2 = it->first->begin(); it2 != it->first->end(); ++it2) {
@@ -327,14 +338,10 @@ public:
 				calle_save++;
 			}
 
-			/*for (std::set<Symbol*>::iterator it = vars.begin(); it != vars.end(); ++it) {
-			if(current->getFunctionSym() != mainSym && !(*it)->isSpilled()){
-			if(params && !params->find((*it)->getName()) ){
-			to_pop.push_back(aux[calle_save]);
-			calle_save++;
-			}
-			}
-			}*/
+			//restore from stack position parameters spilled passed by register location
+			indexReg = 0;
+			for(std::list<Symbol*>::iterator it2 = spilled_parameters.begin(); it2 != spilled_parameters.end(); ++it2, ++indexReg)
+				current->insertCode("       " + Instruction::load(aux[indexReg], aux[Register::fp], current->getSpillOffset()[*it2]));
 
 			current->insertCode("       " + Instruction::mov(aux[Register::fp], aux[Register::sp]));
 			current->insertCode("       " + Instruction::pop(to_pop));
