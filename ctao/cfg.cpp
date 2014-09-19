@@ -264,15 +264,16 @@ void BasicBlock::insertStoreGlobal(){
 		(*stats->rbegin())->getSymTab()->append(new Symbol("zero"));
 	}
 
+	SymbolTable* symtab = (*stats->rbegin())->getSymTab();
 	Symbol* zero = (*stats->rbegin())->getSymTab()->find("zero");
+
+	/*
 
 	IRNode* assign_zero = new AssignStat(zero, new Const(0, (*stats->rbegin())->getSymTab()), (*stats->rbegin())->getSymTab());
 
 	assign_zero->setParent(parent);
 
-	SymbolTable* symtab = (*stats->rbegin())->getSymTab();
-
-	stats->push_back(assign_zero);
+	stats->push_back(assign_zero);*/
 
 	for(SymbolTable::iterator it = symtab->begin(); it != symtab->end(); ++it){
 		if(it->second->isGlobal() && !it->second->isSpilled() && (it->second->getType().getName() != "Function" && it->second->getType().getName() != "Label")){

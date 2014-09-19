@@ -279,7 +279,7 @@ public:
 
 			//alloc stack memory for local vars and local arrays
 			if(allocSpace)
-				current->insertCode("       " + Instruction::sub(aux[Register::sp], aux[Register::sp], OFFSET*allocSpace)); //space for local variables
+				current->insertCode("       " + Instruction::sub(aux[Register::sp], aux[Register::sp], allocSpace)); //space for local variables
 
 			//save to the stack position parameters spilled passed by register location
 			int indexReg = 0;
@@ -343,6 +343,7 @@ public:
 			for(std::list<Symbol*>::iterator it2 = spilled_parameters.begin(); it2 != spilled_parameters.end(); ++it2, ++indexReg)
 				current->insertCode("       " + Instruction::load(aux[indexReg], aux[Register::fp], current->getSpillOffset()[*it2]));
 
+			//restore sp, fp, and lr
 			current->insertCode("       " + Instruction::mov(aux[Register::fp], aux[Register::sp]));
 			current->insertCode("       " + Instruction::pop(to_pop));
 
@@ -445,7 +446,7 @@ private:
 
 		Symbol* var = store->getSymbol();
 
-		if (var->isSpilled()) {
+		if (currentBB->getSpilled().find(var) != currentBB->getSpilled().end()) {
 
 			if(var->isGlobal()){
 				r3 = var;
@@ -503,7 +504,7 @@ private:
 
 		Symbol* var = static_cast<Var*>(load->getChildren()->at(1))->getSymbol();
 
-		if (var->isSpilled()) {
+		if (currentBB->getSpilled().find(var) != currentBB->getSpilled().end()) {
 
 			if(var->isGlobal()){
 				r2 = static_cast<Var*>(load->getChildren()->at(0))->getSymbol();
@@ -805,7 +806,7 @@ private:
 		} else {
 			Symbol* sym = static_cast<Var*> (expr)->getSymbol();
 
-			if (sym->isSpilled()) {
+			if (currentBB->getSpilled().find(sym) != currentBB->getSpilled().end()) {
 				if (sym->isGlobal()) {
 					return sym->getName();
 				} else {
