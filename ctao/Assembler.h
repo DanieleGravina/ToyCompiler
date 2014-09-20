@@ -164,11 +164,6 @@ public:
 
 	void insertEnd() {
 		int counter = 0;
-		for (std::map<Symbol*, int>::iterator it = spill_offset.begin(); it != spill_offset.end(); ++it, ++counter) {
-			ostringstream convert;
-			convert << "pop " << "{ r" << counter << "}";
-			insertCode(convert.str());
-		}
 
 		insertCode("       bx lr");
 

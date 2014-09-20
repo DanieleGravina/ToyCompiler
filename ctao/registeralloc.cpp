@@ -5,7 +5,7 @@ void Graph::addEdge(Symbol* v, Symbol* w) {
     adj[w]->insert(v); // Note: the graph is undirected
 }
 
-void Graph::simplify(unsigned int neighbours) {
+void Graph::simplify(int neighbours) {
 
     graph copy;
 
@@ -15,11 +15,16 @@ void Graph::simplify(unsigned int neighbours) {
 
     Symbol* to_spill = NULL;
 
-    unsigned int max = 0;
+    int max = 0;
 
     while (!copy.empty()) {
 
         for (graph::iterator it = copy.begin(); it != copy.end(); ++it) {
+			if (it->second->size() > max) {
+                to_spill = it->first;
+                max = it->second->size();
+            }
+
             if (it->second->size() < neighbours) {
                 for (graph::iterator it2 = copy.begin(); it2 != copy.end(); ++it2) {
                     it2->second->erase(it->first);
@@ -32,15 +37,13 @@ void Graph::simplify(unsigned int neighbours) {
             }
         }
 
-		 for (graph::iterator it = copy.begin(); it != copy.end(); ++it){
-            if (it->second->size() > max) {
-                to_spill = it->first;
-                max = it->second->size();
-            }
-		 }
+		//we save the var with max interference 
+		if(to_spill) 
+			spill_candidate.push_back(to_spill);
 
-        if (to_spill) {
+		if (!copy.empty() && to_spill) {
             st.push_back(to_spill);
+			spill_candidate.push_back(to_spill);
             cout << "candidate spill " << to_spill->getName() << endl;
             copy.erase(to_spill);
 
@@ -48,9 +51,10 @@ void Graph::simplify(unsigned int neighbours) {
                 it->second->erase(to_spill);
             }
 
-            to_spill = NULL;
-            max = 0;
         }
+
+		to_spill = NULL;
+        max = 0;
     }
 
 }

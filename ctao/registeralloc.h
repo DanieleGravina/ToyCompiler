@@ -26,6 +26,8 @@ class Graph {
     graph adj;
     stack st;
 
+	std::list<Symbol*> spill_candidate;
+
 
 public:
     // Constructor and destructor
@@ -56,7 +58,7 @@ public:
     void addEdge(Symbol* v, Symbol* w);
 
     // return true if simplified graph is empty
-    void simplify(unsigned int neighbours);
+    void simplify(int neighbours);
 
     std::set<Symbol*>* getNotInterfering(Symbol* var);
 
@@ -67,6 +69,10 @@ public:
     stack& getStack() {
         return st;
     }
+
+	std::list<Symbol*>& getSpillCandidate(){
+		return spill_candidate;
+	}
 
     void toSpill(int nregs) {
         for (graph::iterator it = adj.begin(); it != adj.end(); ++it) {
@@ -126,7 +132,7 @@ public:
 	}
 
 	Symbol* getCandidateToSpill(){
-		return *graph.getStack().rbegin();
+		return *graph.getSpillCandidate().begin();
 	}
 
 
