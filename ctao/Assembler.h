@@ -132,6 +132,7 @@ public:
 	}
 
 	void insertCode(string generated_code) {
+
 		code.push_back(generated_code);
 	}
 
@@ -236,12 +237,12 @@ public:
 			std::set<Symbol*> vars = it->second->Vars();
 			SymbolTable* params = it->second->getParameters();
 
-			int calle_save = 4;
+			/*int calle_save = 4;
 
 			while(calle_save < it->second->num_reg()){
-				to_push.push_back(aux[calle_save]);
-				calle_save++;
-			}
+			to_push.push_back(aux[calle_save]);
+			calle_save++;
+			}*/
 
 			current->insertCode("       " + Instruction::push(to_push));
 
@@ -326,12 +327,12 @@ public:
 			to_pop.push_back(aux[Register::fp]);
 			to_pop.push_back(aux[Register::lr]);
 
-			calle_save = 4;
+			/*calle_save = 4;
 
 			while(calle_save < it->second->num_reg()){
-				to_pop.push_back(aux[calle_save]);
-				calle_save++;
-			}
+			to_pop.push_back(aux[calle_save]);
+			calle_save++;
+			}*/
 
 			//restore from stack position parameters spilled passed by register location
 			indexReg = 0;
@@ -591,7 +592,9 @@ private:
 				mov += " ";
 				mov += TermCode(argument, current);
 
-				movs.push_back(mov);
+				//very bad solution to eliminate mov rx rx with x == x
+				if(mov[5] != mov[8])
+					movs.push_back(mov);
 
 				mov.clear();
 			}
