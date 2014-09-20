@@ -555,10 +555,12 @@ private:
 		string push;
 		string pop;
 		vector<string> movs;
+		int num_args;
 
 		for (std::list<IRNode*>::size_type i = 0; i < call_expr->getChildren()->size(); ++i) {
 			if (i < MAX_NUM_ARGUMENTS) {
 				IRNode* argument = call_expr->getChildren()->at(i);
+				num_args = call_expr->getChildren()->size();
 				ostringstream convert;
 				string mov;
 
@@ -566,10 +568,14 @@ private:
 
 				int min;
 
-				if(current->regalloc().num_reg() < MAX_NUM_ARGUMENTS)
-					min = current->regalloc().num_reg();
-				else
+				if(num_args < MAX_NUM_ARGUMENTS)
+					if(num_args < current->regalloc().num_reg())
+						min = num_args;
+					else
+						min = current->regalloc().num_reg();
+				else 
 					min = MAX_NUM_ARGUMENTS;
+
 
 				for(int j = 0; j < min; j++){
 					ostringstream convert2;
@@ -610,6 +616,7 @@ private:
 		for (std::list<IRNode*>::size_type i = 0; i < call_expr->getChildren()->size(); ++i) {
 			if (i < MAX_NUM_ARGUMENTS) {
 				IRNode* argument = call_expr->getChildren()->at(i);
+				num_args = call_expr->getChildren()->size();
 				ostringstream convert;
 				string mov;
 
@@ -617,9 +624,12 @@ private:
 
 				int min = 0;
 
-				if(current->regalloc().num_reg() < MAX_NUM_ARGUMENTS)
-					min = current->regalloc().num_reg();
-				else
+				if(num_args < MAX_NUM_ARGUMENTS)
+					if(num_args < current->regalloc().num_reg())
+						min = num_args;
+					else
+						min = current->regalloc().num_reg();
+				else 
 					min = MAX_NUM_ARGUMENTS;
 
 				for(int j = 0; j < min; j++){
