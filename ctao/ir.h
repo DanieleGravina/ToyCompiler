@@ -590,6 +590,29 @@ public:
 		return s;
 	}
 
+	//negate the operand
+	void negate(){
+
+		switch (tok)
+		{
+		case token::lss : tok = token::geq;
+			break;
+		case token::gtr : tok = token::leq;
+			break;
+		case token::leq : tok = token::gtr;
+			break;
+	    case token::geq : tok = token::lss;
+			break;
+		case token::eql : tok = token::neq;
+			break;
+		case token::neq : tok = token::eql;
+			break;
+		default:
+			break;
+		} 
+
+	}
+
 private:
 	int tok;
 
@@ -638,6 +661,11 @@ public:
 	}
 
 	virtual void lower_expr(std::list<IRNode*>* stack) {
+	}
+
+	void negateOP(){
+		op.negate();
+		static_cast<Tok*>(getChildren()->at(0))->negate();
 	}
 
 private:
@@ -1237,11 +1265,13 @@ public:
 		Symbol* exitLabel = static_cast<LabelType*> (standard_types[BaseType::LABEL])->Label();
 		exitStat->setLabel(exitLabel);
 
-		Symbol* thenLabel = static_cast<LabelType*> (standard_types[BaseType::LABEL])->Label();
-		static_cast<Stat*> (getChildren()->at(1))->setLabel(thenLabel);
+		//Symbol* thenLabel = static_cast<LabelType*> (standard_types[BaseType::LABEL])->Label();
+		//static_cast<Stat*> (getChildren()->at(1))->setLabel(thenLabel);
 
 		BranchStat* branchExit =
-			new BranchStat(new UnExpr(0, getChildren()->at(1), getSymTab()), thenLabel, getSymTab());
+			new BranchStat(getChildren()->at(0), exitLabel, getSymTab());
+
+		static_cast<Expr*>(branchExit->getChildren()->at(0))->negateOP();
 
 		StatList *statlist = new StatList(getSymTab());
 
