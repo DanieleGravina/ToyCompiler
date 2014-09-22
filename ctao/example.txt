@@ -1,19 +1,21 @@
 VAR x, squ;
  
-PROCEDURE square z;
-BEGIN
-   squ:= z * z;
-   IF x < squ THEN 
-   BEGIN 
-    squ := x * x
-   END
-END;
+PROCEDURE square z ;
+	ARRAY y [10];
+    BEGIN
+		squ := z * z ;
+		y[2] := 5
+	END;
  
 BEGIN
    x := 1;
    WHILE x <= 10 DO
    BEGIN
       CALL square x;
+	  IF x < 10 THEN 
+	  BEGIN
+	    x := squ
+	  END;
       ! squ;
       x := x + 1
    END

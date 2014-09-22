@@ -122,7 +122,8 @@ RegisterAlloc::RegisterAlloc(CFG& _cfg, unsigned int _nregs)
     }
 
 
-
+	cout << endl;
+	cout << "Interfering :" << endl;
 
     for (std::set<Symbol*>::iterator it = all_vars.begin(); it != all_vars.end(); ++it) {
         std::set<Symbol*>* not_i = graph.getNotInterfering(*it);
@@ -135,6 +136,8 @@ RegisterAlloc::RegisterAlloc(CFG& _cfg, unsigned int _nregs)
 
         cout << endl;
     }
+
+	cout << endl;
 
 
 

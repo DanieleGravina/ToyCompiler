@@ -349,6 +349,18 @@ bool BasicBlock::registerAllocation(set<Symbol*>& allRegs, map<Symbol*, Symbol*>
 
 		live_in.push_front(temp);
 
+		cout << "Stat:" << endl;
+
+	    (*it)->repr();
+
+		cout << "live in: ";
+
+		for(set<Symbol*>::iterator it2 = temp->begin(); it2 != temp->end(); ++it2){
+			cout << (*it2)->getName() << " ";
+		}
+
+		cout <<endl;
+
 		temp = new std::set<Symbol*>(); 
 
 	}
@@ -396,7 +408,7 @@ bool BasicBlock::registerAllocation(set<Symbol*>& allRegs, map<Symbol*, Symbol*>
 			}
 			else{
 				sym_to_spill = *it;
-				cout << "error : no enough register, spill needed of " << sym_to_spill->getName() << endl;
+				cout << "error : no enough register, spill needed" << endl;
 				return false;
 			}
 				
@@ -412,6 +424,10 @@ bool BasicBlock::registerAllocation(set<Symbol*>& allRegs, map<Symbol*, Symbol*>
 
 	for(list<set<Symbol*>*>::iterator it = live_in.begin(); it != live_in.end(); ++it){
 		delete *it;
+	}
+
+	for(map<Symbol*, Symbol*>::iterator it = varToReg.begin(); it != varToReg.end(); ++it){
+		cout << it->first->getName() << " : " << it->second->getName() << endl;
 	}
 
 	return true;
@@ -512,6 +528,7 @@ CFG::CFG(std::list<BasicBlock*>& proc) {
 }
 
 void CFG::spill(Symbol* sym) {
+	cout << "spill of : " << sym->getName() << endl;
 	for (CFG::iterator it = begin(); it != end(); ++it) {
 		(*it)->spill(sym);
 	}

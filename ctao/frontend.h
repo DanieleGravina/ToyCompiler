@@ -18,7 +18,7 @@
 #include "registeralloc.h"
 #include "Assembler.h"
 
-#define NUM_REGS 8
+#define NUM_REGS 4
 
 using namespace std;
 
@@ -100,7 +100,7 @@ public:
 				if(!cfg_reg_assigned){
 					procedures[*it]->res();
 
-					(*it)->spill(procedures[*it]->SymToSpill());
+					(*it)->spill(procedures[*it]->getCandidateToSpill());
 					(*it)->liveness();
 					(*it)->print_liveness();
 
@@ -115,6 +115,7 @@ public:
 							all_reg_assigned = false;
 							(*it)->spill(procedures[*it]->getCandidateToSpill());
 							(*it)->liveness();
+							cout << endl;
 							(*it)->print_liveness();
 							delete procedures[*it];
                             procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
@@ -126,7 +127,7 @@ public:
 				}
 			}
 
-			procedures[*it]->res();
+			//procedures[*it]->res();
 
 			cout << "************************************" << endl;
 		}

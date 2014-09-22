@@ -673,8 +673,6 @@ private:
 
 		string r2 = TermCode(branch->getChildren()->at(0)->getChildren()->at(2), current);
 
-		cout << label_name + op + " " + r1 + " " + r2 << endl;
-
 		current->insertCode(label_name + op + " " + r1 + " " + r2);
 	}
 
@@ -779,11 +777,8 @@ private:
 			if (expr->NodeType() == "BinExpr") {
 				r3 = TermCode(expr->getChildren()->at(2), current);
 
-				cout << label_name + op + " " + r1 + " " + r2 + " " + r3 << endl;
-
 				current->insertCode(label_name + op + " " + r1 + " " + r2 + " " + r3);
 			} else {
-				cout << label_name + op + " " + r1 + " " + r2 << endl;
 
 				current->insertCode(label_name + op + " " + r1 + " " + r2);
 			}
@@ -795,8 +790,6 @@ private:
 			op = "mov";
 
 			r2 = TermCode(expr, current);
-
-			cout << label_name + op + " " + r1 + " " + r2 << endl;
 
 			current->insertCode(label_name + op + " " + r1 + " " + r2);
 		}
