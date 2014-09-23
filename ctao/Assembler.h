@@ -2,6 +2,9 @@
 #define	ASSEMBLER_H
 
 #include "registeralloc.h"
+#include <fstream>
+#include <string>
+#include <iostream>
 
 #define MAX_NUM_ARGUMENTS 4
 #define OFFSET 4
@@ -163,6 +166,10 @@ public:
 		}
 	}
 
+	std::list<string> getCode(){
+		return code;
+	}
+
 	void insertEnd() {
 		int counter = 0;
 
@@ -190,6 +197,7 @@ class CodeGenerator {
 public:
 
 	CodeGenerator(std::map<CFG*, RegisterAlloc*>& _procedures) : procedures(_procedures), aux(20), mainCode(NULL) {
+
 
 		aux[Register::sp] = new Symbol("sp");
 		aux[Register::fp] = new Symbol("fp");
@@ -349,15 +357,27 @@ public:
 
 		functions.push_back(mainCode);
 
-
+		std::ofstream out("output.txt");
 
 		for (std::list<FunctionCode*>::iterator it = functions.begin(); it != functions.end(); ++it) {
 			(*it)->insertEnd();
 
-			(*it)->print();
+			if(out.is_open()){
+				std::list<string> code = (*it)->getCode();
+				for (std::list<string>::iterator it2 = code.begin(); it2 != code.end(); ++it2) {
+					out << (*it2) << endl;
+				}
 
-			cout << endl;
+				out << endl;
+			}
+			else{
+				(*it)->print();
+				cout << endl;
+			}
+			
 		}
+
+		out.close();
 	}
 
 	~CodeGenerator() {
@@ -801,6 +821,22 @@ private:
 		ostringstream convert;
 
 		if (expr->NodeType() == "Const") {
+
+			//const is offset of local array?
+			Const* c = static_cast<Const*>(expr);
+			if(c->isOffset()){
+				if(c->symOffset()->isGlobal()){
+					convert << "#0";
+					return convert.str();
+				}
+				else{
+					int offset = current->getSpillOffset()[c->symOffset()];
+					convert << "#" << offset;
+					return convert.str();
+				}
+			}
+
+
 			Value val = static_cast<Const*> (expr)->getValue();
 			convert << "#" << val.getValue();
 			return convert.str();

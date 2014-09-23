@@ -4,7 +4,10 @@ PROCEDURE square z ;
 	ARRAY y [10];
     BEGIN
 		squ := z * z ;
-		y[2] := 5
+		if x < 10 THEN
+		  BEGIN
+			x := y[5]
+		  END
 	END;
  
 BEGIN

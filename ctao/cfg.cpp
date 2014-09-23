@@ -113,6 +113,7 @@ void BasicBlock::spill(Symbol* to_spill) {
 
 	std::list<IRNode*>::iterator it = stats->begin();
 
+	//remove load and store of global spilled vars
 	while( it != stats->end()) {
 		if ((*it)->NodeType() == "Load"){
 			if(static_cast<LoadStat*>(*it)->isInitial() && static_cast<LoadStat*>(*it)->getSymbol() == to_spill){
@@ -198,8 +199,6 @@ void BasicBlock::spill(Symbol* to_spill) {
 				Symbol* zero = (*it)->getSymTab()->find("zero");
 				load = new LoadStat(temp, new Var(zero, (*it)->getSymTab()), var, (*it)->getSymTab());
 
-				if(assign_zero)
-					stats->insert(it, assign_zero);
 				stats->insert(it, load);
 
 				(*it)->replace_uses(to_spill, temp);
@@ -351,7 +350,7 @@ bool BasicBlock::registerAllocation(set<Symbol*>& allRegs, map<Symbol*, Symbol*>
 
 		cout << "Stat:" << endl;
 
-	    (*it)->repr();
+		(*it)->repr();
 
 		cout << "live in: ";
 
@@ -411,7 +410,7 @@ bool BasicBlock::registerAllocation(set<Symbol*>& allRegs, map<Symbol*, Symbol*>
 				cout << "error : no enough register, spill needed" << endl;
 				return false;
 			}
-				
+
 		}
 		not_interfering.clear();
 	}
@@ -528,8 +527,9 @@ CFG::CFG(std::list<BasicBlock*>& proc) {
 }
 
 void CFG::spill(Symbol* sym) {
+
 	cout << "spill of : " << sym->getName() << endl;
-	for (CFG::iterator it = begin(); it != end(); ++it) {
+	for (CFG::iterator it = begin(); it != end(); ++it){
 		(*it)->spill(sym);
 	}
 

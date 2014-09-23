@@ -47,6 +47,10 @@ int main(int argc, char **argv) {
 		text = sstr.str();
 		myfile.close();
 	}
+	else{
+		cout << "can't open the file" << endl;
+		exit(1);
+	}
 
 	s_punt = text.c_str();
 

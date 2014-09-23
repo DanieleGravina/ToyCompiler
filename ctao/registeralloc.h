@@ -132,7 +132,13 @@ public:
 	}
 
 	Symbol* getCandidateToSpill(){
-		return *graph.getSpillCandidate().begin();
+
+		std::list<Symbol*>::iterator it;
+		it = graph.getSpillCandidate().begin();
+		while((*it)->getType().getName() == "array")
+			++it;
+		
+		return *it;
 	}
 
 

@@ -74,7 +74,7 @@ public:
 	}
 
 	ArrayType(string name, size_t size, int basetype) :
-		Type(name, size * 4, basetype) {
+		Type("array", size * 4, basetype) {
 	};
 
 };
@@ -499,8 +499,20 @@ private:
 class Const : public IRNode {
 public:
 
-	Const(Value _value, SymbolTable* symtab) : value(_value), IRNode(NULL, NULL, symtab) {
+	Const(Value _value, SymbolTable* symtab) : value(_value), IRNode(NULL, NULL, symtab), offset(false) {
 	};
+
+	Const(Value _value, SymbolTable* symtab, Symbol* _sym_offset) : value(_value), IRNode(NULL, NULL, symtab), 
+		offset(true), sym_offset(_sym_offset) {
+	};
+
+	bool isOffset(){
+		return offset;
+	}
+
+	Symbol* symOffset(){
+		return sym_offset;
+	}
 
 	virtual const string& NodeType() {
 		static string s = "Const";
@@ -517,6 +529,8 @@ public:
 		return value;
 	}
 private:
+	bool offset;
+	Symbol* sym_offset;
 	Value value;
 };
 
@@ -1149,7 +1163,18 @@ public:
 
 		Symbol* index = new Symbol(Symbol::genUniqueId());
 
+		getSymTab()->append(index);
+
 		IRNode* l_assign = new AssignStat(index, expr_left, getSymTab());
+
+		vector<IRNode*>* childs = new vector<IRNode*>();
+		childs->push_back(new Tok(token::plus, getSymTab()));
+		childs->push_back(new Var(index, getSymTab()));
+		childs->push_back(new Const(0, getSymTab(), sym));
+
+		IRNode* sum = new BinExpr(token::times, childs, getSymTab());
+
+		IRNode* index_sum = new AssignStat(index, sum, getSymTab());
 
 		vector<IRNode*>* child = new vector<IRNode*>();
 		child->push_back(new Tok(token::times, getSymTab()));
@@ -1157,8 +1182,6 @@ public:
 		child->push_back(new Const(standard_types[BaseType::INT]->getSize(), getSymTab()));
 
 		IRNode* mul = new BinExpr(token::times, child, getSymTab());
-
-		getSymTab()->append(index);
 
 		IRNode* index_assign = new AssignStat(index, mul, getSymTab());
 
@@ -1172,6 +1195,7 @@ public:
 		statements->append(right_exp);
 		statements->append(l_assign);
 		statements->append(index_assign);
+		statements->append(index_sum);
 
 		statements->append(mem);
 

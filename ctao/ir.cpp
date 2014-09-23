@@ -90,6 +90,15 @@ void ArrayVar::lower() {
 
 	IRNode* new_index = new AssignStat(index, mul, getSymTab());
 
+	vector<IRNode*>* childs = new vector<IRNode*>();
+	childs->push_back(new Tok(token::plus, getSymTab()));
+	childs->push_back(new Var(index, getSymTab()));
+	childs->push_back(new Const(0, getSymTab(), symbol));
+
+	IRNode* sum = new BinExpr(token::times, childs, getSymTab());
+
+	IRNode* index_sum = new AssignStat(index, sum, getSymTab());
+
 	IRNode* load = new LoadStat(result, new Var(symbol, getSymTab()), new Var(index, getSymTab()), getSymTab());
 
 	IRNode* parent = getParent();
@@ -106,6 +115,7 @@ void ArrayVar::lower() {
 
 	statements->append(assign);
 	statements->append(new_index);
+	statements->append(index_sum);
 	statements->append(load);
 
 	statements->setParent(parent);
