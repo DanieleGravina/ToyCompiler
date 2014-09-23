@@ -95,6 +95,7 @@ RegisterAlloc::RegisterAlloc(CFG& _cfg, unsigned int _nregs)
 			zero = (*it)->getSymTab()->find("zero");
     }
 
+	all_vars.erase(zero);
 
     for (list<BasicBlock*>::iterator it = cfg.begin(); it != cfg.end(); ++it) {
 
@@ -154,6 +155,8 @@ RegisterAlloc::RegisterAlloc(CFG& _cfg, unsigned int _nregs)
         vars[*it] = NULL;
     }
 
+	vars[zero] = NULL;
+
     
 
 }
@@ -194,6 +197,14 @@ bool RegisterAlloc::TryAlloc() {
 		stack = graph.getStack();
 	}
 
+	for(std::list<Symbol*>::iterator it = stack.begin(); it != stack.end(); ++it){
+		if(*it == zero){
+			stack.erase(it);
+			break;
+		}
+	}
+	
+
     Symbol* var = stack.front();
     Symbol* reg = NULL;
     std::set<Symbol*>* not_interfering;
@@ -217,7 +228,7 @@ bool RegisterAlloc::TryAlloc() {
                     replace(var, reg);
                 } else {
                     sym_to_spill = var;
-                    std::cout << "spill needed of var " << var->getName() << std::endl;
+                    cout << "spill needed " << endl;
                     result = false;
                 }
             }

@@ -6,7 +6,7 @@ PROCEDURE square z ;
 		squ := z * z ;
 		if x < 10 THEN
 		  BEGIN
-			x := y[5]
+			x := y[squ]
 		  END
 	END;
  

@@ -177,7 +177,8 @@ private:
 
         }
 
-        *not_interfering = all_regs;
+		usedRegs();
+		*not_interfering = used_regs;
         BasicBlock::Difference(*not_interfering, interfering);
 
         return not_interfering;

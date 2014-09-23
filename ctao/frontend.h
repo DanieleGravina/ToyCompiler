@@ -18,7 +18,7 @@
 #include "registeralloc.h"
 #include "Assembler.h"
 
-#define NUM_REGS 4
+#define NUM_REGS 3
 
 using namespace std;
 

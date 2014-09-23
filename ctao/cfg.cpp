@@ -31,7 +31,8 @@ void BasicBlock::init() {
 
 
 		for (list<Symbol*>::iterator it2 = (*it)->get_uses().begin(); it2 != (*it)->get_uses().end(); ++it2) {
-			uses.insert(*it2);
+			if((*it2)->getType().getName() != "array")
+				uses.insert(*it2);
 		}
 
 		Difference(uses, spilled);
@@ -41,8 +42,10 @@ void BasicBlock::init() {
 		Union(gen, uses);
 
 		if ((*it)->NodeType() == "AssignStat" || (*it)->NodeType() == "Load") {
-			kill.insert(static_cast<Stat*> (*it)->getSymbol());
-			Difference(kill, spilled);
+			if(static_cast<Stat*> (*it)->getSymbol()->getType().getName() != "array"){
+				kill.insert(static_cast<Stat*> (*it)->getSymbol());
+				Difference(kill, spilled);
+			}
 		}
 
 	}
@@ -156,31 +159,33 @@ void BasicBlock::spill(Symbol* to_spill) {
 				(*it)->getSymTab()->append(temp);
 
 				if (it == stats->end()){
-					if(assign_zero)
-						stats->push_back(assign_zero);
 					stats->push_back(store);
+					break;
 				}
 				else{
 					++it;
-					if(assign_zero){
-						stats->insert(it, assign_zero);
+
+					it = stats->insert(it, store);
+
+					for (std::list<IRNode*>::iterator it2 = stats->begin(); it2 != stats->end(); ++it2) {
+						cout << (*it2)->NodeType() << " " << endl;
 					}
 
-					stats->insert(it, store);
+					it++;
 
-					for (std::list<IRNode*>::iterator it = stats->begin(); it != stats->end(); ++it) {
-						cout << (*it)->NodeType() << " " << endl;
-					}
+					if(it == stats->end())
+						break;
+
 
 				}
 
 
 
-				std::list<IRNode*>::iterator it_old = it;
+				/*std::list<IRNode*>::iterator it_old = it;
 				it = stats->begin();
 				while(it != it_old)
 					it++;
-				continue;
+				continue;*/
 			}
 		}
 
@@ -312,11 +317,14 @@ bool BasicBlock::registerAllocation(set<Symbol*>& allRegs, map<Symbol*, Symbol*>
 	for(set<Symbol*>::iterator it = all_vars.begin(); it != all_vars.end(); ++it){
 		graph[*it] = new std::set<Symbol*>();
 
-		if (getLiveOut().find(*it) == getLiveOut().end() && getLiveIn().find(*it) == getLiveIn().end()){
-			to_alloc.insert(*it);
-		}
-		else{
-			globals.insert(*it);
+		if((*it)->getType().getName() != "array"){
+
+			if (getLiveOut().find(*it) == getLiveOut().end() && getLiveIn().find(*it) == getLiveIn().end()){
+				to_alloc.insert(*it);
+			}
+			else{
+				globals.insert(*it);
+			}
 		}
 	}
 
@@ -340,7 +348,8 @@ bool BasicBlock::registerAllocation(set<Symbol*>& allRegs, map<Symbol*, Symbol*>
 		}
 
 		for (list<Symbol*>::iterator it2 = (*it)->get_uses().begin(); it2 != (*it)->get_uses().end(); ++it2) {
-			temp->insert(*it2);
+			if((*it2)->getType().getName() != "array")
+				temp->insert(*it2);
 		}
 
 		Difference(*temp, spilled);
