@@ -127,6 +127,10 @@ public:
 		return used_regs.size();
 	}
 
+	int num_real_reg(){
+		return real_regs;
+	}
+
 	set<Symbol*>& allRegs(){
 		return all_regs;
 	}

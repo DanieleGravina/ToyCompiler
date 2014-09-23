@@ -245,12 +245,14 @@ public:
 			std::set<Symbol*> vars = it->second->Vars();
 			SymbolTable* params = it->second->getParameters();
 
-			/*int calle_save = 4;
+			int calle_save = 4;
 
-			while(calle_save < it->second->num_reg()){
-			to_push.push_back(aux[calle_save]);
-			calle_save++;
-			}*/
+			if(cursym != mainSym){
+				while(calle_save < it->second->num_real_reg()){
+					to_push.push_back(aux[calle_save]);
+					calle_save++;
+				}
+			}
 
 			current->insertCode("       " + Instruction::push(to_push));
 
@@ -335,12 +337,14 @@ public:
 			to_pop.push_back(aux[Register::fp]);
 			to_pop.push_back(aux[Register::lr]);
 
-			/*calle_save = 4;
+			calle_save = 4;
 
-			while(calle_save < it->second->num_reg()){
-			to_pop.push_back(aux[calle_save]);
-			calle_save++;
-			}*/
+			if(cursym != mainSym){
+				while(calle_save < it->second->num_real_reg()){
+					to_pop.push_back(aux[calle_save]);
+					calle_save++;
+				}
+			}
 
 			//restore from stack position parameters spilled passed by register location
 			indexReg = 0;
@@ -576,12 +580,10 @@ private:
 		string push;
 		string pop;
 		vector<string> movs;
-		int num_args;
 
 		for (std::list<IRNode*>::size_type i = 0; i < call_expr->getChildren()->size(); ++i) {
 			if (i < MAX_NUM_ARGUMENTS) {
 				IRNode* argument = call_expr->getChildren()->at(i);
-				num_args = call_expr->getChildren()->size();
 				ostringstream convert;
 				string mov;
 
@@ -589,11 +591,8 @@ private:
 
 				int min;
 
-				if(num_args < MAX_NUM_ARGUMENTS)
-					if(num_args < current->regalloc().num_reg())
-						min = num_args;
-					else
-						min = current->regalloc().num_reg();
+				if(current->regalloc().num_reg() <= MAX_NUM_ARGUMENTS)
+					min = current->regalloc().num_reg();
 				else 
 					min = MAX_NUM_ARGUMENTS;
 
@@ -639,7 +638,6 @@ private:
 		for (std::list<IRNode*>::size_type i = 0; i < call_expr->getChildren()->size(); ++i) {
 			if (i < MAX_NUM_ARGUMENTS) {
 				IRNode* argument = call_expr->getChildren()->at(i);
-				num_args = call_expr->getChildren()->size();
 				ostringstream convert;
 				string mov;
 
@@ -647,11 +645,8 @@ private:
 
 				int min = 0;
 
-				if(num_args < MAX_NUM_ARGUMENTS)
-					if(num_args < current->regalloc().num_reg())
-						min = num_args;
-					else
-						min = current->regalloc().num_reg();
+				if(current->regalloc().num_reg() < MAX_NUM_ARGUMENTS)
+					min = current->regalloc().num_reg();
 				else 
 					min = MAX_NUM_ARGUMENTS;
 
