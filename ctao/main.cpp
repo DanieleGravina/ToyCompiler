@@ -9,6 +9,7 @@
 #include <iostream>
 #include <cstdio>
 #include <fstream>
+#include "stdlib.h"
 #include "lexer.h"
 #include "frontend.h"
 
@@ -39,7 +40,7 @@ int main(int argc, char **argv) {
 	path = path.substr(0,1+path.find_last_of('\\')); //removes file name
 	path+= "example.txt"; //adds input file to path
 
-	ifstream myfile (path, ios::in);
+	ifstream myfile (path.c_str());
 	if (myfile.is_open())
 	{
 		stringstream sstr;

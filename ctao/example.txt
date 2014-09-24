@@ -1,14 +1,21 @@
 VAR x, squ;
  
 PROCEDURE square z ;
-	ARRAY y [10];
+    VAR index;
+    ARRAY y [10];
     BEGIN
-		squ := z * z ;
-		if x < 10 THEN
-		  BEGIN
-			x := y[squ]
-		  END
-	END;
+        index := 0;
+        WHILE index < 10 DO
+        BEGIN
+         y[index] := 0;
+         index := index + 1
+        END;
+	squ := z * z ;
+	if squ < 10 THEN
+	  BEGIN
+	    x := y[squ]
+	  END
+    END;
  
 BEGIN
    x := 1;

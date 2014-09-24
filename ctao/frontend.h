@@ -14,11 +14,12 @@
 #include<stack>
 #include<iostream>
 #include<vector>
+#include "stdlib.h"
 #include "lexer.h"
 #include "registeralloc.h"
 #include "Assembler.h"
 
-#define NUM_REGS 8
+#define NUM_REGS 3
 
 using namespace std;
 
@@ -35,7 +36,9 @@ public:
 
     ~frontend() {
         delete global_symtab;
-        //delete bbs;
+        delete standard_types[BaseType::INT];
+        delete standard_types[BaseType::LABEL];
+        delete standard_types[BaseType::FUNCTION];
     }
 
     void program() {
@@ -51,93 +54,97 @@ public:
 
         root->lowering();
 
+        cout << endl;
+
         cout << "after lowering" << endl;
 
         root->repr();
 
         root->flattening();
 
+        cout << endl;
+
         cout << "after flattening" << endl;
 
         root->repr();
 
-		std::list<CFG*> l_cfg;
+        std::list<CFG*> l_cfg;
 
-		std::list<IRNode*> statlists;
+        std::list<IRNode*> statlists;
 
-		root->getStatLists(statlists);
+        root->getStatLists(statlists);
 
-		for (list<IRNode*>::iterator it = statlists.begin(); it != statlists.end(); ++it) {
+        for (list<IRNode*>::iterator it = statlists.begin(); it != statlists.end(); ++it) {
 
-			cout << "Statlist : " << (*it)->Id() << "to BBs" << endl;
+            cout << "Statlist : " << (*it)->Id() << "to BBs" << endl;
 
-			std::list<BasicBlock*> *tmp = IRtoBB(*it);
+            std::list<BasicBlock*> *tmp = IRtoBB(*it);
 
-			l_cfg.push_back(new CFG(*tmp));
+            l_cfg.push_back(new CFG(*tmp));
 
-			delete tmp;
-		}
+            delete tmp;
+        }
 
-		for (std::list<CFG*>::iterator it = l_cfg.begin(); it != l_cfg.end(); ++it) {
-			(*it)->liveness();
-			(*it)->print_liveness();
-			cout << endl;
-		}
+        for (std::list<CFG*>::iterator it = l_cfg.begin(); it != l_cfg.end(); ++it) {
+            (*it)->liveness();
+            (*it)->print_liveness();
+            cout << endl;
+        }
 
-		std::map<CFG*, RegisterAlloc*> procedures;
+        std::map<CFG*, RegisterAlloc*> procedures;
 
-		for (std::list<CFG*>::iterator it = l_cfg.begin(); it != l_cfg.end(); ++it) {
+        for (std::list<CFG*>::iterator it = l_cfg.begin(); it != l_cfg.end(); ++it) {
 
-			procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
+            procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
 
-			bool all_reg_assigned = false;
-			bool cfg_reg_assigned = false;
+            bool all_reg_assigned = false;
+            bool cfg_reg_assigned = false;
 
-			while(!all_reg_assigned){
+            while (!all_reg_assigned) {
 
-				cfg_reg_assigned = procedures[*it]->TryAlloc();
+                cfg_reg_assigned = procedures[*it]->TryAlloc();
 
-				if(!cfg_reg_assigned){
-					procedures[*it]->res();
+                if (!cfg_reg_assigned) {
+                    procedures[*it]->res();
 
-					(*it)->spill(procedures[*it]->getCandidateToSpill());
-					(*it)->liveness();
-					(*it)->print_liveness();
+                    (*it)->spill(procedures[*it]->getCandidateToSpill());
+                    (*it)->liveness();
+                    (*it)->print_liveness();
 
-					delete procedures[*it];
+                    delete procedures[*it];
 
-					procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
-				}
-				else{
-					all_reg_assigned = true;
-					for(CFG::iterator it2 = (*it)->begin(); it2 != (*it)->end(); ++it2){
-						if (!(*it2)->registerAllocation(procedures[*it]->allRegs(), procedures[*it]->mapVarReg())){
-							all_reg_assigned = false;
-							(*it)->spill(procedures[*it]->getCandidateToSpill());
-							(*it)->liveness();
-							cout << endl;
-							(*it)->print_liveness();
-							delete procedures[*it];
+                    procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
+                } else {
+                    all_reg_assigned = true;
+                    for (CFG::iterator it2 = (*it)->begin(); it2 != (*it)->end(); ++it2) {
+                        if (!(*it2)->registerAllocation(procedures[*it]->allRegs(), procedures[*it]->mapVarReg())) {
+                            all_reg_assigned = false;
+                            (*it)->spill(procedures[*it]->getCandidateToSpill());
+                            (*it)->liveness();
+                            cout << endl;
+                            (*it)->print_liveness();
+                            delete procedures[*it];
                             procedures[*it] = new RegisterAlloc(*(*it), NUM_REGS);
 
-							break;
-						}
+                            break;
+                        }
 
-					}
-				}
-			}
+                    }
+                }
+            }
 
-			//procedures[*it]->res();
+            //procedures[*it]->res();
 
-			cout << "************************************" << endl;
-		}
+            cout << "************************************" << endl;
+        }
 
 
 
 
         CodeGenerator codgen(procedures);
 
-		cout << "end" << endl;
+        cout << "end" << endl;
+        //delete procedures;
     }
 
 
@@ -163,7 +170,7 @@ private:
 
     void error(const char s[]) {
         cout << s << endl;
-		exit(1);
+        exit(1);
     }
 
     bool expect(int tok) {
